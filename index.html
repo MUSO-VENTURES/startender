@@ -468,6 +468,7 @@ html,body{-webkit-tap-highlight-color:transparent;overscroll-behavior-y:none}
           </svg>
         </div>
         <button class="pourbtn" id="pourBtn">HOLD TO POUR</button>
+        <button class="btn" id="resetTest" style="width:100%;justify-content:center;margin-top:8px">↺ Reset test</button>
         <div class="note" style="text-align:center">Press and hold for the full count, release to stop. On a keyboard, hold the spacebar.</div>
         <div class="result" id="result"><div class="lbl">Tip the bottle, count it out, and let go on your count.</div></div>
       </div>
@@ -500,7 +501,7 @@ html,body{-webkit-tap-highlight-color:transparent;overscroll-behavior-y:none}
           </div>
         </div>
         <div class="panel">
-          <div class="sect" style="margin-top:0">Past sessions (this device)</div>
+          <div class="row" style="justify-content:space-between"><div class="sect" style="margin:0">Past sessions (this device)</div><button class="btn small" id="clearHist">Clear history</button></div>
           <div class="hist" id="hist"></div>
         </div>
       </div>
@@ -1130,6 +1131,13 @@ function initPour(){
   $("#opc").onchange=e=>{P.opc=parseFloat(e.target.value);LS.set("bbg_opc",P.opc)};
   $("#blind").onchange=e=>{P.blind=e.target.checked;LS.set("bbg_blind",P.blind)};
   $("#guide").onchange=e=>{P.guide=e.target.checked;LS.set("bbg_guide",P.guide)};
+  const resetTest=()=>{ if(P.pouring){cancelAnimationFrame(P.raf);P.pouring=false;$("#pourBtn").classList.remove("active");$("#pourBtn").textContent="HOLD TO POUR";$("#bottle").classList.remove("tilt")}
+    if(P.calib){P.calib=false;P.calibRuns=[];$("#calib").classList.remove("on")}
+    P.session=[];$("#timer").textContent="";setFill(0);drawSession();
+    $("#result").innerHTML=`<div class="lbl">Test reset. ${ROUND} fresh pours at ${frac(P.target)} oz on the ${esc(curSpout().name.toLowerCase())}.</div>`;toast("Pour test reset"); };
+  $("#resetTest").onclick=resetTest;
+  $("#clearHist").onclick=()=>{ if(!LS.get("bbg_hist",[]).length){toast("No history yet");return}
+    askConfirm("Clear all past pour sessions on this device?",()=>{LS.set("bbg_hist",[]);drawHist();toast("History cleared")},"Clear history"); };
   $("#resetSession").onclick=()=>{P.session=[];drawSession();setFill(0);$("#result").innerHTML=`<div class="lbl">Fresh session. ${ROUND} pours at ${frac(P.target)} oz.</div>`};
   $("#calibBtn").onclick=()=>{P.calib=true;P.calibRuns=[];$("#calib").classList.add("on");$("#calibRes").innerHTML="";$("#calibSave").disabled=true;drawSession();$("#calibKind").value=spoutKind();$("#calibAmt").value=spoutKind()==="mixer"?"4":"1";$("#result").innerHTML=`<div class="lbl">Calibration mode: hold while you pour water exactly to the line, then let go.</div>`;$("#stage").scrollIntoView({behavior:"smooth",block:"center"})};
   $("#calibKind").onchange=e=>{$("#calibAmt").value=e.target.value==="mixer"?"4":"1"};
