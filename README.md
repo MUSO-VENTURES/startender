@@ -9,7 +9,7 @@ A bartender's field guide that runs in the browser and installs on iPhone and iP
 - **Food pairing:** drink for their food, or food for their drink, tuned to a regular's taste and allergies
 - **DZ menu:** Doppio Zero cocktails, zero-proof, beer and wine with pairings (from the published Walnut Creek drinks menu, Nov 2026)
 - **Guest feedback:** hand-to-guest rating screen with quick comments and a results summary
-- **Pour test:** free-pour accuracy trainer with spout calibration
+- **Pour test:** free-pour accuracy trainer with presets for metal, plastic, jet, juice/mixer container and juice-bottle spouts, plus spout calibration
 - **Add a drink:** checklist builder for house specialties and bartender signatures
 
 ## Privacy

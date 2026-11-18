@@ -483,14 +483,18 @@ html,body{-webkit-tap-highlight-color:transparent;overscroll-behavior-y:none}
           <div class="sect" style="margin-top:0">Settings</div>
           <div class="toggle"><div>Blind pour<small>Hides the jigger fill and timer while you pour. Real test conditions.</small></div><label class="switch"><input type="checkbox" id="blind" checked><span></span></label></div>
           <div class="toggle"><div>Count guide<small>Flashes each count as you pour. Turn off once you have the rhythm.</small></div><label class="switch"><input type="checkbox" id="guide" checked><span></span></label></div>
-          <div class="toggle"><div>Pour spout<small id="spoutInfo"></small></div><select class="num" id="spout" style="width:170px;text-align:left"></select></div>
-          <div class="toggle"><div>Ounces per count<small>Most bars teach ½ oz per count at a "one one-thousand" pace.</small></div>
+          <div class="field" style="padding:10px 0;border-bottom:1px solid var(--line)"><label>Pour spout</label><select id="spout"></select><div class="note" id="spoutInfo" style="margin-top:6px"></div></div>
+          <div class="toggle" id="opcRow"><div>Ounces per count<small>Most bars teach ½ oz per count at a "one one-thousand" pace.</small></div>
             <select class="num" id="opc" style="width:96px"><option value="0.5">½ oz</option><option value="0.25">¼ oz</option></select></div>
           <div class="row" style="margin-top:10px"><button class="btn small" id="calibBtn">Calibrate a new spout</button><button class="btn small danger" id="spoutDel" style="display:none">Remove this spout</button></div>
           <div class="calib" id="calib">
             <b>Spout calibration</b>
-            <p class="note" style="margin:6px 0 10px">Put the new spout on a bottle of water and grab a jigger. Hold the pour button for the whole time you pour exactly 1 oz into the jigger, then let go. Do it 3 times and the app averages that spout's real speed and saves it to your spout list.</p>
-            <div class="field" style="margin-bottom:10px"><label>Spout name</label><input id="calibName" placeholder="e.g. Plastic red spout, Gooseneck, Bar 2 wells"></div>
+            <p class="note" style="margin:6px 0 10px">Put the spout on a bottle or container of water and grab something with a measured line: a jigger for liquor spouts, a mixing tin or measuring cup for juice and mixer containers. Hold the pour button the whole time you pour exactly to the line, then let go. Do it 3 times and the app averages that spout's real speed.</p>
+            <div class="two" style="margin-bottom:10px">
+              <div class="field"><label>Type</label><select id="calibKind"><option value="liquor">Liquor spout</option><option value="mixer">Juice / mixer</option></select></div>
+              <div class="field"><label>Pour to</label><select id="calibAmt"><option value="1">1 oz</option><option value="1.5">1½ oz</option><option value="2">2 oz</option><option value="4">4 oz</option></select></div>
+            </div>
+            <div class="field" style="margin-bottom:10px"><label>Spout name</label><input id="calibName" placeholder="e.g. Red plastic spout, OJ quart bottle, Bar 2 wells"></div>
             <div id="calibRes" class="hist"></div>
             <div class="row" style="margin-top:8px"><button class="btn small primary" id="calibSave" disabled>Use this speed</button><button class="btn small" id="calibCancel">Cancel</button></div>
           </div>
@@ -972,20 +976,31 @@ function askConfirm(msg,yes,label){
 }
 
 /* ---------- pour test ---------- */
-const STD_SPOUT={id:"std",name:"Standard metal spout",spo:2.0};
+const PRESET_SPOUTS=[
+ {id:"std",name:"Standard metal spout",kind:"liquor",spo:2.0,note:"Tapered chrome speed pourer, the bar standard. Steady flow, about ½ oz per count."},
+ {id:"plastic",name:"Plastic free-flow spout",kind:"liquor",spo:2.4,note:"Short plastic liquor pourer. Usually a little slower than metal and less consistent bottle to bottle, so calibrate the ones on your wells."},
+ {id:"jet",name:"Wide-mouth / jet metal spout",kind:"liquor",spo:1.5,note:"Wide or jet-style metal pourer for high-volume bars. Pours fast, so your counts get shorter."},
+ {id:"mixer",name:"Juice / mixer container (quart or 2 qt)",kind:"mixer",spo:0.6,note:"Plastic bar mixer bottle with a wide spout for juices, sour mix and soda-gun backups. Pours fast, so practice 2 to 4 oz pours."},
+ {id:"juicebtl",name:"Juice or syrup bottle with a speed pourer",kind:"mixer",spo:1.8,note:"A liquor bottle refilled with juice or syrup, fitted with a metal pourer. Thick syrups pour slower than juice."}
+];
+const STD_SPOUT=PRESET_SPOUTS[0];
 const P={target:LS.get("bbg_target",1),spo:2.0,spouts:LS.get("bbg_spouts",[]),spoutId:LS.get("bbg_spout","std"),opc:LS.get("bbg_opc",0.5),blind:LS.get("bbg_blind",true),guide:LS.get("bbg_guide",true),
   pouring:false,t0:0,raf:0,session:[],calib:false,calibRuns:[]};
-const TARGETS=[[0.5,"½ oz"],[1,"1 oz"],[1.5,"1½ oz"],[2,"2 oz"]];
-const ROUND=10, JMAX=2.5;
+const TARGET_SETS={liquor:[[0.5,"½ oz"],[1,"1 oz"],[1.5,"1½ oz"],[2,"2 oz"]],mixer:[[1,"1 oz"],[2,"2 oz"],[3,"3 oz"],[4,"4 oz"]]};
+const ROUND=10;
+let TARGETS=TARGET_SETS.liquor, JMAX=2.5;
+const spoutKind=()=>curSpout().kind||"liquor";
+const countOz=()=>spoutKind()==="mixer"?1:P.opc;
 function drawTargets(){
   const el=$("#targetChips");
   el.innerHTML=TARGETS.map(([v,l])=>`<button class="chip ${v===P.target?"on":""}" data-v="${v}">Target ${l}</button>`).join("");
-  el.onclick=e=>{const b=e.target.closest(".chip");if(!b||P.pouring)return;P.target=+b.dataset.v;LS.set("bbg_target",P.target);P.session=[];drawTargets();drawMarks();drawSession();setFill(0);$("#result").innerHTML=`<div class="lbl">New target: ${frac(P.target)} oz. That's about ${frac(P.target/P.opc)} count${P.target/P.opc===1?"":"s"} on your spout.</div>`};
+  el.onclick=e=>{const b=e.target.closest(".chip");if(!b||P.pouring)return;P.target=+b.dataset.v;LS.set("bbg_target",P.target);P.session=[];drawTargets();drawMarks();drawSession();setFill(0);$("#result").innerHTML=`<div class="lbl">New target: ${frac(P.target)} oz. That's about ${frac(P.target/countOz())} count${P.target/countOz()===1?"":"s"} on your ${esc(curSpout().name.toLowerCase())}.</div>`};
 }
 function yFor(oz){return 186-(oz/JMAX)*166}
 function drawMarks(){
   let h="";
-  for(let oz=0.5;oz<=2;oz+=0.5){
+  const step=spoutKind()==="mixer"?1:0.5, top=spoutKind()==="mixer"?4:2;
+  for(let oz=step;oz<=top;oz+=step){
     const y=yFor(oz), isT=Math.abs(oz-P.target)<0.01;
     h+=`<line x1="20" x2="110" y1="${y}" y2="${y}" stroke="${isT?"#7cc58f":"#4f4c46"}" stroke-width="${isT?2.5:1}" stroke-dasharray="${isT?"":"4 4"}"/>
         <text x="122" y="${y+4}" font-size="11" fill="${isT?"#7cc58f":"#9a948c"}" text-anchor="end" font-family="Inter">${frac(oz)}</text>`;
@@ -1012,7 +1027,7 @@ function startPour(){
     else $("#timer").textContent="";
     if(!P.blind && !P.calib) setFill(oz);
     if(P.guide){
-      const beatLen=spo*P.opc, b=Math.floor(el/beatLen)+1;
+      const beatLen=spo*(P.calib?0.5:countOz()), b=Math.floor(el/beatLen)+1;
       if(b!==lastBeat){lastBeat=b;const be=$("#beat");be.textContent=b;be.classList.add("on");setTimeout(()=>be.classList.remove("on"),180)}
     }
     if(el>12){endPour();return}
@@ -1035,8 +1050,8 @@ function endPour(){
   $("#bottle").classList.remove("tilt");$("#timer").textContent="";
   if(el<0.08){$("#result").innerHTML=`<div class="lbl">Too quick. Hold the button for the length of your pour.</div>`;return}
   if(P.calib){
-    P.calibRuns.push(el);
-    $("#calibRes").innerHTML=P.calibRuns.map((s,i)=>`<div><span>Run ${i+1}</span><span>${s.toFixed(2)} s for 1 oz</span></div>`).join("")+
+    const amt=+$("#calibAmt").value||1; P.calibRuns.push(el/amt);
+    $("#calibRes").innerHTML=P.calibRuns.map((s,i)=>`<div><span>Run ${i+1}</span><span>${(s*amt).toFixed(2)} s for ${frac(amt)} oz</span></div>`).join("")+
       (P.calibRuns.length?`<div><b>Average</b><b>${avg(P.calibRuns).toFixed(2)} s per oz</b></div>`:"");
     $("#calibSave").disabled=P.calibRuns.length<1;
     $("#result").innerHTML=`<div class="big">${el.toFixed(2)} s</div><div class="lbl">Calibration run ${P.calibRuns.length}${P.calibRuns.length<3?`. ${3-P.calibRuns.length} more for a solid average.`:". Tap Use this speed."}</div>`;
@@ -1046,7 +1061,7 @@ function endPour(){
   const [g,label]=grade(err);
   setFill(oz);
   P.session.push({oz,err,acc,g,sec:el});
-  const counts=el/(P.spo*P.opc);
+  const counts=el/(P.spo*countOz());
   $("#result").innerHTML=`<div class="big g-${g}">${label}</div>
     <div style="font-size:18px;margin:4px 0"><b>${oz.toFixed(2)} oz</b> <span class="lbl">poured vs ${frac(P.target)} oz target</span></div>
     <div class="lbl">${err>=0?"+":""}${err.toFixed(0)}% · ${el.toFixed(2)} s · ${counts.toFixed(1)} counts · accuracy ${acc.toFixed(0)}%</div>`;
@@ -1068,7 +1083,7 @@ function drawSession(){
 }
 function finishSession(){
   const s=P.session, a=avg(s.map(x=>x.acc));
-  const h=LS.get("bbg_hist",[]); h.unshift({t:Date.now(),target:P.target,acc:a,bias:avg(s.map(x=>x.err))}); LS.set("bbg_hist",h.slice(0,25));
+  const h=LS.get("bbg_hist",[]); h.unshift({t:Date.now(),target:P.target,acc:a,bias:avg(s.map(x=>x.err)),spout:curSpout().name}); LS.set("bbg_hist",h.slice(0,25));
   drawHist();
   const bias=avg(s.map(x=>x.err));
   const tip=Math.abs(bias)<=5?"Your count is locked in. Try it with the count guide off.":bias>0?"You're running heavy. Speed up your count or tip back a beat earlier. Over 100 pours that adds up fast in pour cost.":"You're running light. Slow your count to a steady \"one one-thousand\" pace.";
@@ -1076,21 +1091,31 @@ function finishSession(){
 }
 function drawHist(){
   const h=LS.get("bbg_hist",[]);
-  $("#hist").innerHTML=h.length?h.slice(0,8).map(x=>`<div><span>${new Date(x.t).toLocaleDateString(undefined,{month:"short",day:"numeric"})} · ${frac(x.target)} oz</span><span class="${x.acc>=90?"g-perfect":x.acc>=80?"g-close":"g-off"}">${x.acc.toFixed(0)}% ${x.bias>5?"heavy":x.bias<-5?"light":""}</span></div>`).join(""):"Finish a 10-pour session to log it here.";
+  $("#hist").innerHTML=h.length?h.slice(0,8).map(x=>`<div><span>${new Date(x.t).toLocaleDateString(undefined,{month:"short",day:"numeric"})} · ${frac(x.target)} oz${x.spout&&x.spout!=="Standard metal spout"?` · ${esc(x.spout.split(" (")[0])}`:""}</span><span class="${x.acc>=90?"g-perfect":x.acc>=80?"g-close":"g-off"}">${x.acc.toFixed(0)}% ${x.bias>5?"heavy":x.bias<-5?"light":""}</span></div>`).join(""):"Finish a 10-pour session to log it here.";
 }
-function allSpouts(){return [STD_SPOUT,...P.spouts]}
+function allSpouts(){return [...PRESET_SPOUTS,...P.spouts]}
 function curSpout(){return allSpouts().find(s=>s.id===P.spoutId)||STD_SPOUT}
+const isPreset=s=>PRESET_SPOUTS.some(x=>x.id===s.id);
 function drawSpouts(){
   const cur=curSpout(); P.spoutId=cur.id; P.spo=cur.spo;
-  $("#spout").innerHTML=allSpouts().map(s=>`<option value="${esc(s.id)}" ${s.id===cur.id?"selected":""}>${esc(s.name)}</option>`).join("");
-  const perSec=1/cur.spo;
-  $("#spoutInfo").textContent = cur.id==="std"
-    ? `Tapered chrome speed pourer. Preset to ${cur.spo.toFixed(1)} s per oz, so a steady "one one-thousand" count is about ${frac(perSec)} oz.`
-    : `Calibrated: ${cur.spo.toFixed(2)} s per oz, about ${frac(Math.round(perSec*4)/4)||perSec.toFixed(2)} oz per second.`;
-  $("#spoutDel").style.display=cur.id==="std"?"none":"";
+  const kind=cur.kind||"liquor"; TARGETS=TARGET_SETS[kind]; JMAX=kind==="mixer"?5:2.5;
+  if(!TARGETS.some(t=>t[0]===P.target)){P.target=kind==="mixer"?2:1;LS.set("bbg_target",P.target)}
+  const opt=s=>`<option value="${esc(s.id)}" ${s.id===cur.id?"selected":""}>${esc(s.name)}</option>`;
+  const mine=P.spouts;
+  $("#spout").innerHTML=`<optgroup label="Liquor spouts">${PRESET_SPOUTS.filter(s=>s.kind==="liquor").map(opt).join("")}</optgroup>
+    <optgroup label="Juice and mixers">${PRESET_SPOUTS.filter(s=>s.kind==="mixer").map(opt).join("")}</optgroup>
+    ${mine.length?`<optgroup label="Your calibrated spouts">${mine.map(opt).join("")}</optgroup>`:""}`;
+  const ozPerSec=1/cur.spo;
+  $("#spoutInfo").textContent = isPreset(cur)
+    ? `${cur.note} Preset to ${cur.spo.toFixed(1)} s per oz (about ${ozPerSec>=1?frac(Math.round(ozPerSec*4)/4):frac(Math.round(ozPerSec*4)/4)||ozPerSec.toFixed(2)} oz per second). Calibrate yours for exact numbers.`
+    : `Calibrated ${kind==="mixer"?"juice / mixer":"liquor"} spout: ${cur.spo.toFixed(2)} s per oz, about ${frac(Math.round(ozPerSec*4)/4)||ozPerSec.toFixed(2)} oz per second.`;
+  $("#spoutDel").style.display=isPreset(cur)?"none":"";
+  const row=$("#opcRow"); if(row)row.style.display=kind==="mixer"?"none":"";
+  const lbl=$("#bottle text"); if(lbl)lbl.textContent=kind==="mixer"?"JUICE":"WELL";
+  $(".jigger")&&($(".jigger").style.transform=kind==="mixer"?"scale(1.08)":"");
 }
-function selectSpout(id){P.spoutId=id;LS.set("bbg_spout",id);drawSpouts();P.session=[];drawSession();setFill(0);
-  $("#result").innerHTML=`<div class="lbl">Using ${esc(curSpout().name)}. Fresh session.</div>`}
+function selectSpout(id){P.spoutId=id;LS.set("bbg_spout",id);drawSpouts();drawTargets();drawMarks();P.session=[];drawSession();setFill(0);
+  $("#result").innerHTML=`<div class="lbl">Using ${esc(curSpout().name)}. Fresh session at ${frac(P.target)} oz.${spoutKind()==="mixer"?" Each count is about 1 oz on mixer spouts.":""}</div>`}
 function initPour(){
   drawSpouts();$("#opc").value=String(P.opc);$("#blind").checked=P.blind;$("#guide").checked=P.guide;
   drawTargets();drawMarks();drawSession();drawHist();
@@ -1106,11 +1131,12 @@ function initPour(){
   $("#blind").onchange=e=>{P.blind=e.target.checked;LS.set("bbg_blind",P.blind)};
   $("#guide").onchange=e=>{P.guide=e.target.checked;LS.set("bbg_guide",P.guide)};
   $("#resetSession").onclick=()=>{P.session=[];drawSession();setFill(0);$("#result").innerHTML=`<div class="lbl">Fresh session. ${ROUND} pours at ${frac(P.target)} oz.</div>`};
-  $("#calibBtn").onclick=()=>{P.calib=true;P.calibRuns=[];$("#calib").classList.add("on");$("#calibRes").innerHTML="";$("#calibSave").disabled=true;drawSession();$("#result").innerHTML=`<div class="lbl">Calibration mode: hold while you pour exactly 1 oz of water into a jigger.</div>`;$("#stage").scrollIntoView({behavior:"smooth",block:"center"})};
+  $("#calibBtn").onclick=()=>{P.calib=true;P.calibRuns=[];$("#calib").classList.add("on");$("#calibRes").innerHTML="";$("#calibSave").disabled=true;drawSession();$("#calibKind").value=spoutKind();$("#calibAmt").value=spoutKind()==="mixer"?"4":"1";$("#result").innerHTML=`<div class="lbl">Calibration mode: hold while you pour water exactly to the line, then let go.</div>`;$("#stage").scrollIntoView({behavior:"smooth",block:"center"})};
+  $("#calibKind").onchange=e=>{$("#calibAmt").value=e.target.value==="mixer"?"4":"1"};
   $("#calibCancel").onclick=()=>{P.calib=false;$("#calib").classList.remove("on");drawSession();$("#result").innerHTML=`<div class="lbl">Calibration canceled.</div>`};
   $("#calibSave").onclick=()=>{
     const name=$("#calibName").value.trim()||`Custom spout ${P.spouts.length+1}`;
-    const sp={id:"s"+Date.now().toString(36),name,spo:Math.round(avg(P.calibRuns)*100)/100};
+    const sp={id:"s"+Date.now().toString(36),name,spo:Math.round(avg(P.calibRuns)*100)/100,kind:$("#calibKind").value};
     P.spouts.push(sp);LS.set("bbg_spouts",P.spouts);
     P.calib=false;$("#calib").classList.remove("on");$("#calibName").value="";
     selectSpout(sp.id);
