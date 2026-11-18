@@ -451,12 +451,12 @@ html,body{-webkit-tap-highlight-color:transparent;overscroll-behavior-y:none}
   <!-- POUR TEST -->
   <section class="view" id="v-pour-test">
     <div class="pagehead"><div class="eyebrow">Free pour training</div><h2>Pour count test</h2></div>
-    <div class="seg modes" id="pMode" style="margin-bottom:12px"><button data-m="practice" class="on">Practice</button><button data-m="cert">Shift sign-off</button></div>
+    <div class="seg modes" id="pMode" style="margin-bottom:12px"><button data-m="practice" class="on">Practice (manual)</button><button data-m="cert">Pre-shift test</button></div>
     <div class="pourwrap">
       <div class="panel">
         <div id="certBox" class="certbox" style="display:none">
           <div class="row" style="justify-content:space-between;align-items:flex-start;gap:10px">
-            <div><b style="font-size:16px">Shift sign-off</b><div class="note" style="margin:2px 0 0" id="certRule"></div></div>
+            <div><b style="font-size:16px">Pre-shift pour test</b><div class="note" style="margin:2px 0 0" id="certRule"></div></div>
             <div class="seg" id="certPass" style="flex:0 0 auto"></div>
           </div>
           <div class="row" style="margin-top:10px;flex-wrap:nowrap"><input class="search" id="certName" placeholder="Bartender name (required)" style="flex:1"><button class="btn primary" id="certStart" style="white-space:nowrap">Start sign-off</button></div>
@@ -1153,15 +1153,22 @@ function selectSpout(id){ if(P.cert&&P.cert.running){toast("Finish or reset the 
 /* ---------- shift sign-off ---------- */
 const soStore=makeStore("signoffs","bbg_signoffs",()=>{drawSignoffs()});
 const todayKey=()=>new Date().toDateString();
-function certPlan(){const k=spoutKind(); const a=k==="mixer"?[2,4]:[1,0.5]; return Array.from({length:ROUND},(_,i)=>a[i%2]);}
+function certPlan(){
+  const pool=spoutKind()==="mixer"?[1,2,3,4]:[0.5,1,1.5,2];
+  const plan=[]; pool.forEach(t=>{plan.push(t,t)});            // every amount at least twice
+  while(plan.length<ROUND)plan.push(pool[Math.floor(Math.random()*pool.length)]);
+  for(let i=plan.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[plan[i],plan[j]]=[plan[j],plan[i]]}
+  for(let i=1;i<plan.length;i++){ if(plan[i]===plan[i-1]){ const k=plan.findIndex((v,x)=>x>i&&v!==plan[i]&&v!==plan[i-1]); if(k>0)[plan[i],plan[k]]=[plan[k],plan[i]]; } }
+  return plan;
+}
 function drawCertUI(){
   const on=P.mode==="cert";
   $$("#pMode button").forEach(b=>b.classList.toggle("on",b.dataset.m===P.mode));
   $("#certBox").style.display=on?"":"none"; $("#signoffPanel").style.display=on?"":"none";
   $("#targetChips").style.display=on?"none":"";
   $("#resetSession").parentElement.style.display=on?"none":"";
-  const k=spoutKind(), a=k==="mixer"?["2 oz","4 oz"]:["1 oz","½ oz"];
-  $("#certRule").textContent=`${ROUND} blind pours alternating ${a[0]} and ${a[1]} on the ${curSpout().name.toLowerCase()}. No count guide. Score ${P.passMark}% or better to get on bar.`;
+  const k=spoutKind(), range=k==="mixer"?"1 to 4 oz":"½ to 2 oz";
+  $("#certRule").textContent=`${ROUND} blind pours at random amounts (${range}) on the ${curSpout().name.toLowerCase()}, revealed one at a time. No count guide. Score ${P.passMark}% or better to get on bar.`;
   $("#certPass").innerHTML=[90,95].map(v=>`<button class="${v===P.passMark?"on":""}" data-p="${v}">${v}%</button>`).join("");
   if(!$("#certName").value)$("#certName").value=LS.get("bbg_staff","");
   const running=P.cert&&P.cert.running; $("#certName").disabled=!!running; $("#certStart").textContent=running?"In progress":"Start sign-off"; $("#certStart").disabled=!!running;
@@ -1181,7 +1188,7 @@ function startCert(){
   if(P.calib){P.calib=false;$("#calib").classList.remove("on")}
   P.cert={name,plan:certPlan(),running:true,startedAt:Date.now()}; P.session=[]; P.target=P.cert.plan[0];
   drawMarks(); setFill(0); drawSession(); drawCertUI();
-  $("#result").innerHTML=`<div class="lbl">Good luck, ${esc(name.split(" ")[0])}. Pour ${frac(P.target)} oz, blind. Take your time.</div>`;
+  $("#result").innerHTML=`<div class="lbl">Good luck, ${esc(name.split(" ")[0])}. Amounts are random, so read each one before you tip. First up: ${frac(P.target)} oz.</div>`;
   $("#stage").scrollIntoView({behavior:"smooth",block:"center"});
 }
 const KIND_FAIL=[
@@ -1220,7 +1227,7 @@ function drawSignoffs(){
 function initCert(){
   $("#pMode").onclick=e=>{const b=e.target.closest("button");if(!b||P.pouring)return; if(P.cert&&P.cert.running&&b.dataset.m!=="cert"){askConfirm("Leave the sign-off? This attempt won't count.",()=>{P.cert.running=false;P.mode="practice";P.session=[];drawSession();drawTargets();drawCertUI();setFill(0)},"Leave");return}
     P.mode=b.dataset.m; P.session=[]; drawSession(); setFill(0);
-    if(P.mode==="practice"){drawTargets(); $("#result").innerHTML=`<div class="lbl">Practice mode. Pick a target and pour.</div>`} else $("#result").innerHTML=`<div class="lbl">Shift sign-off: enter your name and tap Start sign-off.</div>`;
+    if(P.mode==="practice"){drawTargets(); $("#result").innerHTML=`<div class="lbl">Practice mode. Pick any amount and pour as much as you like. Nothing here counts toward sign-off.</div>`} else $("#result").innerHTML=`<div class="lbl">Pre-shift test: enter your name and tap Start sign-off.</div>`;
     drawCertUI(); };
   $("#certPass").onclick=e=>{const b=e.target.closest("button");if(!b)return;P.passMark=+b.dataset.p;LS.set("bbg_pass",P.passMark);drawCertUI()};
   $("#certStart").onclick=startCert;
