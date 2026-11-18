@@ -296,6 +296,16 @@ ul.tips li{padding:3px 0}
 .gpick{border-top:1px solid var(--line);padding:9px 0 2px;margin-top:8px}
 .gpick .why{font-size:13px;color:var(--muted);margin-top:2px}
 #gAddReg{padding:10px 12px}
+.certbox{background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:12px;margin-bottom:12px}
+.certnow{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--tint);border:1px solid #5a4630}
+.certnow b{font-size:22px;color:var(--amber);letter-spacing:-.5px;white-space:nowrap}
+.certnow span{flex:1}
+.certnow span:last-child{text-align:right}
+.certnow span{font-size:12px;color:var(--muted)}
+.certres{text-align:center;padding:6px}
+.certres.pass .big{color:var(--green)}
+.certres.fail .big{color:var(--gold)}
+.sorow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
 
 header.top{padding-top:calc(10px + env(safe-area-inset-top));padding-left:calc(12px + env(safe-area-inset-left));padding-right:calc(12px + env(safe-area-inset-right))}
 .wrap{padding-left:calc(16px + env(safe-area-inset-left));padding-right:calc(16px + env(safe-area-inset-right));padding-bottom:calc(120px + env(safe-area-inset-bottom))}
@@ -441,8 +451,17 @@ html,body{-webkit-tap-highlight-color:transparent;overscroll-behavior-y:none}
   <!-- POUR TEST -->
   <section class="view" id="v-pour-test">
     <div class="pagehead"><div class="eyebrow">Free pour training</div><h2>Pour count test</h2></div>
+    <div class="seg modes" id="pMode" style="margin-bottom:12px"><button data-m="practice" class="on">Practice</button><button data-m="cert">Shift sign-off</button></div>
     <div class="pourwrap">
       <div class="panel">
+        <div id="certBox" class="certbox" style="display:none">
+          <div class="row" style="justify-content:space-between;align-items:flex-start;gap:10px">
+            <div><b style="font-size:16px">Shift sign-off</b><div class="note" style="margin:2px 0 0" id="certRule"></div></div>
+            <div class="seg" id="certPass" style="flex:0 0 auto"></div>
+          </div>
+          <div class="row" style="margin-top:10px;flex-wrap:nowrap"><input class="search" id="certName" placeholder="Bartender name (required)" style="flex:1"><button class="btn primary" id="certStart" style="white-space:nowrap">Start sign-off</button></div>
+          <div id="certNow" class="certnow" style="display:none"></div>
+        </div>
         <div class="row" style="justify-content:space-between;margin-bottom:6px">
           <h3 style="font-size:18px">Pour count</h3>
           <span class="status" id="roundLbl">Round 1 of 10</span>
@@ -474,6 +493,10 @@ html,body{-webkit-tap-highlight-color:transparent;overscroll-behavior-y:none}
       </div>
 
       <div style="display:grid;gap:16px;align-content:start">
+        <div class="panel" id="signoffPanel" style="display:none">
+          <div class="row" style="justify-content:space-between"><div class="sect" style="margin:0">Today's sign-offs</div><span class="status" id="signoffStatus"></span></div>
+          <div id="signoffList" style="margin-top:8px"></div>
+        </div>
         <div class="panel">
           <div class="sect" style="margin-top:0">This session</div>
           <div class="pips" id="pips"></div>
@@ -803,7 +826,7 @@ async function initDb(){
     db = await window.claude.use("db");
     if(!db)return;
     col = db.collection("drinks");
-    regStore.init(db); fbStore.init(db);
+    regStore.init(db); fbStore.init(db); soStore.init(db);
     const timer=setTimeout(()=>{ if(!cloud){ $("#syncStatus").innerHTML='<span class="dot"></span><span>Team list not reachable yet, showing this device</span>'; } },10000);
     let first=true;
     col.onSnapshot(async snap=>{
@@ -986,7 +1009,7 @@ const PRESET_SPOUTS=[
 ];
 const STD_SPOUT=PRESET_SPOUTS[0];
 const P={target:LS.get("bbg_target",1),spo:2.0,spouts:LS.get("bbg_spouts",[]),spoutId:LS.get("bbg_spout","std"),opc:LS.get("bbg_opc",0.5),blind:LS.get("bbg_blind",true),guide:LS.get("bbg_guide",true),
-  pouring:false,t0:0,raf:0,session:[],calib:false,calibRuns:[]};
+  pouring:false,t0:0,raf:0,session:[],calib:false,calibRuns:[],mode:"practice",cert:null,passMark:LS.get("bbg_pass",90)};
 const TARGET_SETS={liquor:[[0.5,"½ oz"],[1,"1 oz"],[1.5,"1½ oz"],[2,"2 oz"]],mixer:[[1,"1 oz"],[2,"2 oz"],[3,"3 oz"],[4,"4 oz"]]};
 const ROUND=10;
 let TARGETS=TARGET_SETS.liquor, JMAX=2.5;
@@ -1014,6 +1037,7 @@ function setFill(oz){
 }
 function startPour(){
   if(P.pouring)return;
+  if(P.mode==="cert"&&!P.calib&&!(P.cert&&P.cert.running)){toast("Enter your name and tap Start sign-off");return}
   if(!P.calib && P.session.length>=ROUND){P.session=[];drawSession()}
   P.pouring=true;P.t0=performance.now();
   $("#pourBtn").classList.add("active");$("#pourBtn").textContent="POURING…";
@@ -1024,10 +1048,11 @@ function startPour(){
     const el=(performance.now()-P.t0)/1000;
     const spo = P.calib?2:P.spo;
     const oz=el/spo;
-    if(!P.blind||P.calib){ $("#timer").textContent=el.toFixed(2)+"s"; }
+    const blindNow=P.mode==="cert"?true:P.blind;
+    if(!blindNow||P.calib){ $("#timer").textContent=el.toFixed(2)+"s"; }
     else $("#timer").textContent="";
-    if(!P.blind && !P.calib) setFill(oz);
-    if(P.guide){
+    if(!blindNow && !P.calib) setFill(oz);
+    if(P.guide&&P.mode!=="cert"){
       const beatLen=spo*(P.calib?0.5:countOz()), b=Math.floor(el/beatLen)+1;
       if(b!==lastBeat){lastBeat=b;const be=$("#beat");be.textContent=b;be.classList.add("on");setTimeout(()=>be.classList.remove("on"),180)}
     }
@@ -1067,11 +1092,16 @@ function endPour(){
     <div style="font-size:18px;margin:4px 0"><b>${oz.toFixed(2)} oz</b> <span class="lbl">poured vs ${frac(P.target)} oz target</span></div>
     <div class="lbl">${err>=0?"+":""}${err.toFixed(0)}% · ${el.toFixed(2)} s · ${counts.toFixed(1)} counts · accuracy ${acc.toFixed(0)}%</div>`;
   drawSession();
+  if(P.mode==="cert"&&P.cert&&P.cert.running){
+    if(P.session.length===ROUND)return finishCert();
+    P.target=P.cert.plan[P.session.length]; drawMarks(); drawCertNow();
+    return;
+  }
   if(P.session.length===ROUND)finishSession();
 }
 const avg=a=>a.reduce((s,x)=>s+x,0)/(a.length||1);
 function drawSession(){
-  $("#roundLbl").textContent=P.calib?"Calibrating":`Pour ${Math.min(P.session.length+1,ROUND)} of ${ROUND}`;
+  $("#roundLbl").textContent=P.calib?"Calibrating":P.mode==="cert"&&P.cert&&P.cert.running?`Sign-off · ${P.cert.name}`:`Pour ${Math.min(P.session.length+1,ROUND)} of ${ROUND}`;
   $("#pips").innerHTML=Array.from({length:ROUND},(_,i)=>{const s=P.session[i];return `<div class="pip ${s?s.g:""}">${s?Math.round(s.acc):i+1}</div>`}).join("");
   const s=P.session;
   if(!s.length){$("#stats").innerHTML=`<div class="stat" style="grid-column:1/-1"><span>Pour ${ROUND} times at ${frac(P.target)} oz to get your accuracy, consistency and tendency.</span></div>`;return}
@@ -1115,8 +1145,87 @@ function drawSpouts(){
   const lbl=$("#bottle text"); if(lbl)lbl.textContent=kind==="mixer"?"JUICE":"WELL";
   $(".jigger")&&($(".jigger").style.transform=kind==="mixer"?"scale(1.08)":"");
 }
-function selectSpout(id){P.spoutId=id;LS.set("bbg_spout",id);drawSpouts();drawTargets();drawMarks();P.session=[];drawSession();setFill(0);
+function selectSpout(id){ if(P.cert&&P.cert.running){toast("Finish or reset the sign-off before changing spouts");$("#spout").value=P.spoutId;return}
+  P.spoutId=id;LS.set("bbg_spout",id);drawSpouts();drawTargets();drawMarks();P.session=[];drawSession();setFill(0);
+  if(typeof drawCertUI==="function")drawCertUI();
   $("#result").innerHTML=`<div class="lbl">Using ${esc(curSpout().name)}. Fresh session at ${frac(P.target)} oz.${spoutKind()==="mixer"?" Each count is about 1 oz on mixer spouts.":""}</div>`}
+
+/* ---------- shift sign-off ---------- */
+const soStore=makeStore("signoffs","bbg_signoffs",()=>{drawSignoffs()});
+const todayKey=()=>new Date().toDateString();
+function certPlan(){const k=spoutKind(); const a=k==="mixer"?[2,4]:[1,0.5]; return Array.from({length:ROUND},(_,i)=>a[i%2]);}
+function drawCertUI(){
+  const on=P.mode==="cert";
+  $$("#pMode button").forEach(b=>b.classList.toggle("on",b.dataset.m===P.mode));
+  $("#certBox").style.display=on?"":"none"; $("#signoffPanel").style.display=on?"":"none";
+  $("#targetChips").style.display=on?"none":"";
+  $("#resetSession").parentElement.style.display=on?"none":"";
+  const k=spoutKind(), a=k==="mixer"?["2 oz","4 oz"]:["1 oz","½ oz"];
+  $("#certRule").textContent=`${ROUND} blind pours alternating ${a[0]} and ${a[1]} on the ${curSpout().name.toLowerCase()}. No count guide. Score ${P.passMark}% or better to get on bar.`;
+  $("#certPass").innerHTML=[90,95].map(v=>`<button class="${v===P.passMark?"on":""}" data-p="${v}">${v}%</button>`).join("");
+  if(!$("#certName").value)$("#certName").value=LS.get("bbg_staff","");
+  const running=P.cert&&P.cert.running; $("#certName").disabled=!!running; $("#certStart").textContent=running?"In progress":"Start sign-off"; $("#certStart").disabled=!!running;
+  $("#certPass").style.pointerEvents=running?"none":""; $("#certPass").style.opacity=running?.5:1;
+  drawCertNow(); drawSignoffs();
+}
+function drawCertNow(){
+  const box=$("#certNow"); if(!box)return;
+  if(!(P.mode==="cert"&&P.cert&&P.cert.running)){box.style.display="none";return}
+  box.style.display=""; const i=P.session.length;
+  box.innerHTML=`<span>Pour ${Math.min(i+1,ROUND)} of ${ROUND}</span><b>Pour ${frac(P.cert.plan[i]??P.target)} oz</b><span>Blind · no count guide</span>`;
+  $("#roundLbl").textContent=`Sign-off · ${P.cert.name}`;
+}
+function startCert(){
+  const name=$("#certName").value.trim(); if(!name){$("#certName").focus();toast("Add the bartender's name first");return}
+  LS.set("bbg_staff",name);
+  if(P.calib){P.calib=false;$("#calib").classList.remove("on")}
+  P.cert={name,plan:certPlan(),running:true,startedAt:Date.now()}; P.session=[]; P.target=P.cert.plan[0];
+  drawMarks(); setFill(0); drawSession(); drawCertUI();
+  $("#result").innerHTML=`<div class="lbl">Good luck, ${esc(name.split(" ")[0])}. Pour ${frac(P.target)} oz, blind. Take your time.</div>`;
+  $("#stage").scrollIntoView({behavior:"smooth",block:"center"});
+}
+const KIND_FAIL=[
+ n=>`Not quite there yet, ${n}. Take a breath, shake out your pouring hand and start over. You've got this before you hop on the bar.`,
+ n=>`Close, ${n}, but we need you a little sharper before service. Reset, find your rhythm and run it again.`,
+ n=>`Good effort, ${n}. Pour accuracy keeps drinks consistent and cost in line, so let's run it one more time before you get on the bar.`];
+async function finishCert(){
+  const s=P.session, score=Math.round(avg(s.map(x=>x.acc))*10)/10, pass=score>=P.passMark, bias=avg(s.map(x=>x.err));
+  const halves={}; s.forEach((x,i)=>{const t=P.cert.plan[i];(halves[t]=halves[t]||[]).push(x.acc)});
+  const weak=Object.entries(halves).map(([t,a])=>[+t,avg(a)]).sort((a,b)=>a[1]-b[1])[0];
+  const name=P.cert.name, first=name.split(" ")[0];
+  const rec={id:"so"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),name,at:Date.now(),day:todayKey(),score,pass,passMark:P.passMark,spout:curSpout().name,bias:Math.round(bias)};
+  P.cert.running=false;
+  await soStore.save(rec);
+  const tip=Math.abs(bias)<=5?`Your ${frac(weak[0])} oz pours were the shakiest (${Math.round(weak[1])}%). Slow down and lock that count in.`:bias>0?`You're running heavy, about ${Math.round(bias)}% over. Tip back a beat earlier.`:`You're running light, about ${Math.round(-bias)}% under. Hold the pour a touch longer.`;
+  $("#result").innerHTML=pass
+    ?`<div class="certres pass"><div class="big">✓ Cleared for shift</div><div style="font-size:18px;margin:4px 0"><b>${score}%</b> <span class="lbl">vs ${P.passMark}% needed</span></div>
+       <div class="lbl">Nice pouring, ${esc(first)}. You're signed off for today, ${new Date().toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"})} at ${new Date().toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})}.</div></div>`
+    :`<div class="certres fail"><div class="big">Let's run it again</div><div style="font-size:18px;margin:4px 0"><b>${score}%</b> <span class="lbl">vs ${P.passMark}% needed</span></div>
+       <div style="margin:6px 0">${esc(pick(KIND_FAIL,Math.random)(first))}</div><div class="lbl">${esc(tip)}</div>
+       <button class="btn primary" id="certRetry" style="margin-top:12px;justify-content:center;width:100%">Start over</button></div>`;
+  drawCertUI(); drawHist();
+  const r=$("#certRetry"); if(r)r.onclick=startCert;
+}
+function drawSignoffs(){
+  const el=$("#signoffList"); if(!el)return;
+  const st=$("#signoffStatus"); if(st)st.innerHTML=soStore.cloud?`<span class="dot cloud"></span><span>Shared with your team</span>`:`<span class="dot"></span><span>This device</span>`;
+  const today=soStore.items.filter(x=>x.day===todayKey()).sort((a,b)=>b.at-a.at);
+  const byName={}; today.forEach(x=>{(byName[x.name]=byName[x.name]||[]).push(x)});
+  const names=Object.keys(byName);
+  if(!names.length){el.innerHTML=`<div class="note">Nobody has signed off yet today.</div>`;return}
+  el.innerHTML=names.map(n=>{const a=byName[n], best=a.find(x=>x.pass), last=a[0];
+    return `<div class="sorow ${best?"pass":"fail"}"><div><b>${esc(n)}</b> <span class="note" style="margin:0">${a.length} attempt${a.length===1?"":"s"}</span></div>
+      <div>${best?`<span class="tag altag ok">✓ Cleared ${esc(String(best.score))}% · ${new Date(best.at).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})}</span>`:`<span class="tag altag">Not cleared · best ${esc(String(Math.max(...a.map(x=>x.score))))}%</span>`}</div></div>`}).join("");
+}
+function initCert(){
+  $("#pMode").onclick=e=>{const b=e.target.closest("button");if(!b||P.pouring)return; if(P.cert&&P.cert.running&&b.dataset.m!=="cert"){askConfirm("Leave the sign-off? This attempt won't count.",()=>{P.cert.running=false;P.mode="practice";P.session=[];drawSession();drawTargets();drawCertUI();setFill(0)},"Leave");return}
+    P.mode=b.dataset.m; P.session=[]; drawSession(); setFill(0);
+    if(P.mode==="practice"){drawTargets(); $("#result").innerHTML=`<div class="lbl">Practice mode. Pick a target and pour.</div>`} else $("#result").innerHTML=`<div class="lbl">Shift sign-off: enter your name and tap Start sign-off.</div>`;
+    drawCertUI(); };
+  $("#certPass").onclick=e=>{const b=e.target.closest("button");if(!b)return;P.passMark=+b.dataset.p;LS.set("bbg_pass",P.passMark);drawCertUI()};
+  $("#certStart").onclick=startCert;
+  drawCertUI();
+}
 function initPour(){
   drawSpouts();$("#opc").value=String(P.opc);$("#blind").checked=P.blind;$("#guide").checked=P.guide;
   drawTargets();drawMarks();drawSession();drawHist();
@@ -1133,6 +1242,7 @@ function initPour(){
   $("#guide").onchange=e=>{P.guide=e.target.checked;LS.set("bbg_guide",P.guide)};
   const resetTest=()=>{ if(P.pouring){cancelAnimationFrame(P.raf);P.pouring=false;$("#pourBtn").classList.remove("active");$("#pourBtn").textContent="HOLD TO POUR";$("#bottle").classList.remove("tilt")}
     if(P.calib){P.calib=false;P.calibRuns=[];$("#calib").classList.remove("on")}
+    if(P.mode==="cert"&&P.cert&&P.cert.running){P.cert.running=false;P.session=[];drawSession();setFill(0);drawCertUI();$("#result").innerHTML=`<div class="lbl">Sign-off canceled. Tap Start sign-off when you're ready.</div>`;toast("Sign-off reset");return}
     P.session=[];$("#timer").textContent="";setFill(0);drawSession();
     $("#result").innerHTML=`<div class="lbl">Test reset. ${ROUND} fresh pours at ${frac(P.target)} oz on the ${esc(curSpout().name.toLowerCase())}.</div>`;toast("Pour test reset"); };
   $("#resetTest").onclick=resetTest;
@@ -2125,7 +2235,7 @@ function initMenu(){
 
 
 /* ---------- standalone backup / restore ---------- */
-const BK_KEYS=["bbg_table","bbg_custom","bbg_regs","bbg_feedback","bbg_spouts","bbg_spout","bbg_hist","bbg_staff","bbg_opc","bbg_target","bbg_blind","bbg_guide"];
+const BK_KEYS=["bbg_signoffs","bbg_pass","bbg_table","bbg_custom","bbg_regs","bbg_feedback","bbg_spouts","bbg_spout","bbg_hist","bbg_staff","bbg_opc","bbg_target","bbg_blind","bbg_guide"];
 function initBackup(){
   const standalone=typeof window.claude==="undefined"; if(!standalone)return;
   $("#backupBox").hidden=false;
@@ -2471,7 +2581,7 @@ function initGroup(){
 
 /* ---------- boot ---------- */
 $("#q").addEventListener("input",renderGrid);
-drawChips();renderGrid();initPour();buildGroups();renderRegs();initPairing();initMenu();initFeedback();initAllergyCheck();initGroup();initBackup();route();setStatus();
+drawChips();renderGrid();initPour();buildGroups();renderRegs();initPairing();initMenu();initFeedback();initAllergyCheck();initGroup();initCert();initBackup();route();setStatus();
 $("#rq").addEventListener("input",renderRegs);$("#addReg").onclick=()=>openRegEditor();
 initDb();
 </script>
