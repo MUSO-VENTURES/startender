@@ -1012,6 +1012,7 @@ const P={target:LS.get("bbg_target",1),spo:2.0,spouts:LS.get("bbg_spouts",[]),sp
   pouring:false,t0:0,raf:0,session:[],calib:false,calibRuns:[],mode:"practice",cert:null,passMark:LS.get("bbg_pass",90)};
 const TARGET_SETS={liquor:[[0.5,"½ oz"],[1,"1 oz"],[1.5,"1½ oz"],[2,"2 oz"]],mixer:[[1,"1 oz"],[2,"2 oz"],[3,"3 oz"],[4,"4 oz"]]};
 const ROUND=10;
+const roundLen=()=>P.mode==="cert"&&P.cert?P.cert.plan.length:ROUND;
 let TARGETS=TARGET_SETS.liquor, JMAX=2.5;
 const spoutKind=()=>curSpout().kind||"liquor";
 const countOz=()=>spoutKind()==="mixer"?1:P.opc;
@@ -1038,7 +1039,7 @@ function setFill(oz){
 function startPour(){
   if(P.pouring)return;
   if(P.mode==="cert"&&!P.calib&&!(P.cert&&P.cert.running)){toast("Enter your name and tap Start sign-off");return}
-  if(!P.calib && P.session.length>=ROUND){P.session=[];drawSession()}
+  if(!P.calib && P.session.length>=roundLen()){P.session=[];drawSession()}
   P.pouring=true;P.t0=performance.now();
   $("#pourBtn").classList.add("active");$("#pourBtn").textContent="POURING…";
   $("#bottle").classList.add("tilt");
@@ -1061,6 +1062,13 @@ function startPour(){
   };
   P.raf=requestAnimationFrame(tick);
 }
+function cancelPour(){
+  if(!P.pouring)return;
+  cancelAnimationFrame(P.raf);P.pouring=false;
+  $("#pourBtn").classList.remove("active");$("#pourBtn").textContent="HOLD TO POUR";
+  $("#bottle").classList.remove("tilt");$("#timer").textContent="";setFill(0);
+  $("#result").innerHTML=`<div class="lbl">That pour got interrupted, so it didn't count. Go again on ${frac(P.target)} oz.</div>`;
+}
 function grade(errPct){
   const a=Math.abs(errPct);
   if(a<=5)return["perfect","Dead on"];
@@ -1074,7 +1082,7 @@ function endPour(){
   const el=(performance.now()-P.t0)/1000;
   $("#pourBtn").classList.remove("active");$("#pourBtn").textContent="HOLD TO POUR";
   $("#bottle").classList.remove("tilt");$("#timer").textContent="";
-  if(el<0.08){$("#result").innerHTML=`<div class="lbl">Too quick. Hold the button for the length of your pour.</div>`;return}
+  if(el<(P.mode==="cert"&&!P.calib?0.25:0.08)){$("#result").innerHTML=`<div class="lbl">Too quick to count. Hold the button for the length of your pour${P.mode==="cert"?". That tap didn't count against you":""}.</div>`;return}
   if(P.calib){
     const amt=+$("#calibAmt").value||1; P.calibRuns.push(el/amt);
     $("#calibRes").innerHTML=P.calibRuns.map((s,i)=>`<div><span>Run ${i+1}</span><span>${(s*amt).toFixed(2)} s for ${frac(amt)} oz</span></div>`).join("")+
@@ -1093,18 +1101,25 @@ function endPour(){
     <div class="lbl">${err>=0?"+":""}${err.toFixed(0)}% · ${el.toFixed(2)} s · ${counts.toFixed(1)} counts · accuracy ${acc.toFixed(0)}%</div>`;
   drawSession();
   if(P.mode==="cert"&&P.cert&&P.cert.running){
-    if(P.session.length===ROUND)return finishCert();
-    P.target=P.cert.plan[P.session.length]; drawMarks(); drawCertNow();
+    if(P.session.length>=P.cert.plan.length)return finishCert();
+    const prev=P.target; P.target=P.cert.plan[P.session.length]; drawMarks(); drawCertNow();
+    if(P.target!==prev){ toast(`Next up: ${frac(P.target)} oz`); $("#result").innerHTML+=`<div class="lbl" style="margin-top:8px;color:var(--amber)"><b>Size change: next 5 pours are ${frac(P.target)} oz.</b></div>`; }
     return;
   }
   if(P.session.length===ROUND)finishSession();
 }
 const avg=a=>a.reduce((s,x)=>s+x,0)/(a.length||1);
 function drawSession(){
-  $("#roundLbl").textContent=P.calib?"Calibrating":P.mode==="cert"&&P.cert&&P.cert.running?`Sign-off · ${P.cert.name}`:`Pour ${Math.min(P.session.length+1,ROUND)} of ${ROUND}`;
-  $("#pips").innerHTML=Array.from({length:ROUND},(_,i)=>{const s=P.session[i];return `<div class="pip ${s?s.g:""}">${s?Math.round(s.acc):i+1}</div>`}).join("");
+  $("#roundLbl").textContent=P.calib?"Calibrating":P.mode==="cert"&&P.cert&&P.cert.running?`Sign-off · ${P.cert.name}`:`Pour ${Math.min(P.session.length+1,roundLen())} of ${roundLen()}`;
+  $("#pips").innerHTML=Array.from({length:roundLen()},(_,i)=>{const s=P.session[i];return `<div class="pip ${s?s.g:""}">${s?Math.round(s.acc):i+1}</div>`}).join("");
   const s=P.session;
   if(!s.length){$("#stats").innerHTML=`<div class="stat" style="grid-column:1/-1"><span>Pour ${ROUND} times at ${frac(P.target)} oz to get your accuracy, consistency and tendency.</span></div>`;return}
+  if(P.mode==="cert"&&P.cert){
+    const sizes=[...new Set(P.cert.plan)];
+    $("#stats").innerHTML=`<div class="stat" style="grid-column:1/-1"><b>${avg(s.map(x=>x.acc)).toFixed(1)}%</b><span>Running score · ${P.passMark}% needed</span></div>`+
+      sizes.map(t=>{const a=s.filter((x,i)=>P.cert.plan[i]===t);return `<div class="stat"><b>${a.length?avg(a.map(x=>x.acc)).toFixed(0)+"%":"–"}</b><span>${frac(t)} oz · ${a.length}/5 poured</span></div>`}).join("");
+    return;
+  }
   const ozs=s.map(x=>x.oz), m=avg(ozs), sd=Math.sqrt(avg(ozs.map(x=>(x-m)**2))), bias=avg(s.map(x=>x.err)), inTol=s.filter(x=>Math.abs(x.err)<=10).length;
   $("#stats").innerHTML=`
     <div class="stat"><b>${avg(s.map(x=>x.acc)).toFixed(0)}%</b><span>Avg accuracy</span></div>
@@ -1154,12 +1169,8 @@ function selectSpout(id){ if(P.cert&&P.cert.running){toast("Finish or reset the 
 const soStore=makeStore("signoffs","bbg_signoffs",()=>{drawSignoffs()});
 const todayKey=()=>new Date().toDateString();
 function certPlan(){
-  const pool=spoutKind()==="mixer"?[1,2,3,4]:[0.5,1,1.5,2];
-  const plan=[]; pool.forEach(t=>{plan.push(t,t)});            // every amount at least twice
-  while(plan.length<ROUND)plan.push(pool[Math.floor(Math.random()*pool.length)]);
-  for(let i=plan.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[plan[i],plan[j]]=[plan[j],plan[i]]}
-  for(let i=1;i<plan.length;i++){ if(plan[i]===plan[i-1]){ const k=plan.findIndex((v,x)=>x>i&&v!==plan[i]&&v!==plan[i-1]); if(k>0)[plan[i],plan[k]]=[plan[k],plan[i]]; } }
-  return plan;
+  const sizes=spoutKind()==="mixer"?[1,2,3]:[0.5,1,1.5];
+  return sizes.flatMap(t=>[t,t,t,t,t]);   // 5 pours at each size, smallest first
 }
 function drawCertUI(){
   const on=P.mode==="cert";
@@ -1167,8 +1178,8 @@ function drawCertUI(){
   $("#certBox").style.display=on?"":"none"; $("#signoffPanel").style.display=on?"":"none";
   $("#targetChips").style.display=on?"none":"";
   $("#resetSession").parentElement.style.display=on?"none":"";
-  const k=spoutKind(), range=k==="mixer"?"1 to 4 oz":"½ to 2 oz";
-  $("#certRule").textContent=`${ROUND} blind pours at random amounts (${range}) on the ${curSpout().name.toLowerCase()}, revealed one at a time. No count guide. Score ${P.passMark}% or better to get on bar.`;
+  const sz=spoutKind()==="mixer"?["1 oz","2 oz","3 oz"]:["½ oz","1 oz","1½ oz"];
+  $("#certRule").textContent=`15 blind pours: ${sz[0]} five times, then ${sz[1]} five times, then ${sz[2]} five times, on the ${curSpout().name.toLowerCase()}. No count guide. Score ${P.passMark}% or better to get on bar.`;
   $("#certPass").innerHTML=[90,95].map(v=>`<button class="${v===P.passMark?"on":""}" data-p="${v}">${v}%</button>`).join("");
   if(!$("#certName").value)$("#certName").value=LS.get("bbg_staff","");
   const running=P.cert&&P.cert.running; $("#certName").disabled=!!running; $("#certStart").textContent=running?"In progress":"Start sign-off"; $("#certStart").disabled=!!running;
@@ -1179,7 +1190,8 @@ function drawCertNow(){
   const box=$("#certNow"); if(!box)return;
   if(!(P.mode==="cert"&&P.cert&&P.cert.running)){box.style.display="none";return}
   box.style.display=""; const i=P.session.length;
-  box.innerHTML=`<span>Pour ${Math.min(i+1,ROUND)} of ${ROUND}</span><b>Pour ${frac(P.cert.plan[i]??P.target)} oz</b><span>Blind · no count guide</span>`;
+  const t=P.cert.plan[i]??P.target, inSet=P.cert.plan.slice(0,i+1).filter(x=>x===t).length;
+  box.innerHTML=`<span>Pour ${Math.min(i+1,P.cert.plan.length)} of ${P.cert.plan.length}</span><b>${frac(t)} oz</b><span>${inSet} of 5 at this size</span>`;
   $("#roundLbl").textContent=`Sign-off · ${P.cert.name}`;
 }
 function startCert(){
@@ -1188,8 +1200,8 @@ function startCert(){
   if(P.calib){P.calib=false;$("#calib").classList.remove("on")}
   P.cert={name,plan:certPlan(),running:true,startedAt:Date.now()}; P.session=[]; P.target=P.cert.plan[0];
   drawMarks(); setFill(0); drawSession(); drawCertUI();
-  $("#result").innerHTML=`<div class="lbl">Good luck, ${esc(name.split(" ")[0])}. Amounts are random, so read each one before you tip. First up: ${frac(P.target)} oz.</div>`;
-  $("#stage").scrollIntoView({behavior:"smooth",block:"center"});
+  $("#result").innerHTML=`<div class="lbl">Good luck, ${esc(name.split(" ")[0])}. Five pours at ${frac(P.target)} oz to start, then the size steps up.</div>`;
+  const r=$("#stage").getBoundingClientRect(); if(r.top<0||r.bottom>innerHeight)$("#stage").scrollIntoView({behavior:"smooth",block:"center"});
 }
 const KIND_FAIL=[
  n=>`Not quite there yet, ${n}. Take a breath, shake out your pouring hand and start over. You've got this before you hop on the bar.`,
@@ -1238,7 +1250,9 @@ function initPour(){
   drawTargets();drawMarks();drawSession();drawHist();
   const btn=$("#pourBtn");
   btn.addEventListener("pointerdown",e=>{e.preventDefault();btn.setPointerCapture?.(e.pointerId);startPour()});
-  btn.addEventListener("pointerup",endPour);btn.addEventListener("pointercancel",endPour);
+  btn.addEventListener("pointerup",endPour);btn.addEventListener("pointercancel",cancelPour);
+  btn.addEventListener("lostpointercapture",()=>{ if(P.pouring)endPour(); });
+  document.addEventListener("visibilitychange",()=>{ if(document.hidden&&P.pouring)cancelPour(); });
   btn.addEventListener("contextmenu",e=>e.preventDefault());
   document.addEventListener("keydown",e=>{if(e.code==="Space"&&location.hash==="#pour-test"&&!e.repeat&&!/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)){e.preventDefault();startPour()}});
   document.addEventListener("keyup",e=>{if(e.code==="Space"&&P.pouring){e.preventDefault();endPour()}});
