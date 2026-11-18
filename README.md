@@ -5,6 +5,7 @@ A bartender's field guide that runs in the browser and installs on iPhone and iP
 - **Allergy check:** ask every guest first. 13 allergens (the 9 major ones plus sulfites, citrus, coconut, celery), guest self-entry, avoid and check-first lists for drinks and dishes, cross-contact steps for the bar
 - **Recipes:** 48 classics and modern classics with garnish prep, batch scaling and step check-off
 - **Regulars:** their usual and exactly how they take it, interests and talking points, consented photo, guest rating, tailored drink suggestions
+- **Group table:** add regulars and walk-ins or pass the device around; picks for each person, one round for the whole table with a zero-proof match, and dishes safe for everyone
 - **Food pairing:** drink for their food, or food for their drink, tuned to a regular's taste and allergies
 - **DZ menu:** Doppio Zero cocktails, zero-proof, beer and wine with pairings (from the published Walnut Creek drinks menu, Nov 2026)
 - **Guest feedback:** hand-to-guest rating screen with quick comments and a results summary
