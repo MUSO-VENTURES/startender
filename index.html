@@ -269,6 +269,28 @@ label.btn[aria-disabled=true]{opacity:.45}
 @media(max-width:859px){.jump.on{display:inline-flex}}
 .backup{margin-top:40px;padding:16px;border:1px dashed var(--line2);border-radius:14px;display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 .backup[hidden]{display:none}
+.navalert{color:#ffb4a8!important}
+nav.tabs a.navalert.on{background:#e06a5a;color:#1a0f0d!important}
+.chip.al.on{background:#4a221d;border-color:#c0574a;color:#ffb4a8}
+.chip.al.big{font-size:16px;padding:12px 16px}
+.chip.al.sm{padding:5px 10px;font-size:12px}
+.alert{background:#3a1d19;border:1px solid #8f4a40;border-radius:12px;padding:12px 14px;color:#ffd6cf}
+.alert b{display:block;color:#ffb4a8;font-size:15px}
+.alert span{font-size:13px;color:#e8c2bb}
+.alert.small{padding:8px 10px;margin:4px 0}
+.alert.small b{font-size:13px}
+.alert.ask{background:#33291b;border-color:#7a5a2c;color:#f3dfbf}
+.alert.ask b{color:var(--gold)}
+.alsection{border:1px solid #6b3a33;background:#24191699;border-radius:12px;padding:12px}
+.alrow{border-left:3px solid var(--line2);padding:8px 10px;margin:6px 0;background:var(--panel2);border-radius:0 10px 10px 0}
+.alrow.bad{border-left-color:var(--red)}.alrow.warn{border-left-color:var(--gold)}
+.alrow .why{font-size:13px;color:var(--muted)}
+.altag{background:#3a1d19;color:#ffb4a8}
+.altag.may{background:#33291b;color:var(--gold)}
+.altag.ok{background:#1e3324;color:var(--green)}
+.alline{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:4px 0 6px}
+ul.tips{margin:6px 0 0;padding-left:18px;font-size:14px}
+ul.tips li{padding:3px 0}
 
 header.top{padding-top:calc(10px + env(safe-area-inset-top));padding-left:calc(12px + env(safe-area-inset-left));padding-right:calc(12px + env(safe-area-inset-right))}
 .wrap{padding-left:calc(16px + env(safe-area-inset-left));padding-right:calc(16px + env(safe-area-inset-right));padding-bottom:calc(120px + env(safe-area-inset-bottom))}
@@ -296,6 +318,7 @@ html,body{-webkit-tap-highlight-color:transparent;overscroll-behavior-y:none}
     </div>
     <nav class="tabs">
       <a href="#recipes" data-v="recipes">Recipes</a>
+      <a href="#allergy" data-v="allergy" class="navalert">⚠ Allergy Check</a>
       <a href="#regulars" data-v="regulars">Regulars</a>
       <a href="#pairing" data-v="pairing">Food Pairing</a>
       <a href="#dz-menu" data-v="dz-menu">DZ Menu</a>
@@ -313,11 +336,31 @@ html,body{-webkit-tap-highlight-color:transparent;overscroll-behavior-y:none}
     <input class="search" id="q" placeholder="Search drinks or ingredients (e.g. mezcal, Campari, egg white)" autocomplete="off">
     <div class="chips" id="colChips"></div>
     <div class="chips" id="famChips"></div>
+    <div class="chips" id="alFilter"></div>
     <div class="row" style="justify-content:space-between">
       <div class="count" id="count"></div>
       <div class="status" id="syncStatus"><span class="dot"></span><span>Saved on this device</span></div>
     </div>
     <div class="grid" id="grid"></div>
+  </section>
+
+  <!-- ALLERGY CHECK -->
+  <section class="view" id="v-allergy">
+    <div class="pagehead"><div class="eyebrow">Ask before you pour</div><h2>Allergy check</h2><p>Start here with every new guest. Mark their allergies and see what to avoid, what to double-check and how to keep their drink clean at the bar.</p></div>
+    <div class="panel">
+      <button class="btn primary" id="acHand" style="width:100%;justify-content:center;padding:13px">Hand to guest: let them tap their allergies</button>
+      <div class="two" style="margin-top:14px">
+        <div class="field"><label>Guest name (optional)</label><input id="acName" placeholder="First name"></div>
+        <div class="field"><label>Anything else to avoid</label><input id="acOther" placeholder="Mint, raw onion, sweeteners"></div>
+      </div>
+      <div class="field" style="margin-top:12px"><label>Allergies</label><div class="row" id="acChips"></div></div>
+      <div class="field" style="margin-top:12px"><label>How serious</label><div class="seg" id="acSev"></div></div>
+      <div class="row" style="margin-top:14px"><button class="btn small" id="acSave">Save as new regular</button><button class="btn small" id="acPair">Pair food &amp; drink for them</button><button class="btn small" id="acClear">Clear</button></div>
+    </div>
+    <div id="acSummary" style="margin-top:14px"></div>
+    <div class="seg" id="acView" style="margin-top:12px"></div>
+    <div class="panel" style="margin-top:10px"><div id="acRes"></div><div id="acTips"></div>
+      <div class="note" style="margin-top:14px">⚠ Based on our specs and the published menu. Recipes, brands and suppliers change. Always confirm with the kitchen and check bottle labels before serving a guest with an allergy.</div></div>
   </section>
 
   <!-- REGULARS -->
@@ -343,7 +386,8 @@ html,body{-webkit-tap-highlight-color:transparent;overscroll-behavior-y:none}
         <div class="dishgrid" id="pDishes"></div>
       </div>
       <div class="pairside">
-        <div class="field" style="margin-bottom:12px"><label>Guest</label><select id="pGuest"></select></div>
+        <div class="field" style="margin-bottom:8px"><label>Guest</label><select id="pGuest"></select></div>
+        <div class="field" style="margin-bottom:12px"><label>⚠ Allergies at the table</label><div id="pAlNote"></div><div class="row" id="pAlChips"></div></div>
         <div class="row" style="justify-content:space-between;margin-bottom:8px"><h3 style="font-size:18px" id="pResTitle">Pour this</h3><button class="btn small" id="pClear">Clear dishes</button></div>
         <div class="seg" id="pKinds"></div>
         <div class="note" id="pSel"></div>
@@ -462,8 +506,7 @@ html,body{-webkit-tap-highlight-color:transparent;overscroll-behavior-y:none}
       <div class="sect">Ingredients: check what goes in, then set the ounces</div>
       <div id="groups" style="display:grid;gap:10px"></div>
 
-      <div class="note">Liquid before dilution: ${frac(liquidOz(d.ing,mult))} oz${mult>1?` for ${mult} drinks`:""}</div>
-   <div class="sect">Garnish${mult>1?` <span class="note" style="text-transform:none;letter-spacing:0;font-weight:400">for each of ${mult} drinks</span>`:""}</div>
+      <div class="sect">Garnish</div>
       <div class="panel" style="padding:0">
         <div class="gchips" id="garnChips"></div>
         <div style="padding:0 12px 12px"><input class="search" id="bGarnOther" placeholder="Other garnish (optional)"></div>
@@ -780,13 +823,13 @@ async function deleteDrink(id){
 const uid=()=>"d"+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 
 /* ---------- routing ---------- */
-const VIEWS=["recipes","regulars","pairing","dz-menu","feedback","pour-test","add-drink"];
+const VIEWS=["recipes","allergy","regulars","pairing","dz-menu","feedback","pour-test","add-drink"];
 function route(){
   let v=location.hash.replace("#","");
   if(!VIEWS.includes(v))v="recipes";
   $$(".view").forEach(x=>x.classList.toggle("on",x.id==="v-"+v));
   $$("nav.tabs a").forEach(a=>a.classList.toggle("on",a.dataset.v===v));
-  try{ if(v==="feedback")drawFeedback(); if(v==="pairing")drawPairing(); if(v==="regulars")renderRegs(); }catch(e){}
+  try{ if(v==="allergy")drawAllergyCheck(); if(v==="feedback")drawFeedback(); if(v==="pairing")drawPairing(); if(v==="regulars")renderRegs(); }catch(e){}
   window.scrollTo(0,0);
 }
 window.addEventListener("hashchange",route);
@@ -795,12 +838,17 @@ window.addEventListener("hashchange",route);
 const COLS=["All","Classics","Modern","House Specialty","Bartender Signature"];
 const FAMS=["Any style","Spirit-Forward","Sour","Highball","Tiki & Tropical","Sparkling","Coffee & Cream","Brunch"];
 const BASES=["Any spirit","Whiskey","Gin","Vodka","Rum","Tequila & Mezcal","Brandy","Liqueur","Other"];
-let fCol="All", fFam="Any style", fBase="Any spirit";
+let fCol="All", fFam="Any style", fBase="Any spirit", fAl=[];
 function chipRow(el,list,cur,cb){
   el.innerHTML=list.map(x=>`<button class="chip ${x===cur?"on":""}" data-x="${esc(x)}">${esc(x)}</button>`).join("");
   el.onclick=e=>{const b=e.target.closest(".chip");if(!b)return;cb(b.dataset.x)};
 }
-function drawChips(){
+function drawAlFilter(){
+  const el=$("#alFilter"); if(!el)return;
+  el.innerHTML=`<span class="note" style="margin:0 4px 0 0;align-self:center;white-space:nowrap;color:var(--red)">⚠ Hide drinks with</span>`+alChips(ALLERGENS,fAl,"sm");
+  el.onclick=e=>{const c=e.target.closest(".chip");if(!c)return;const k=c.dataset.al;fAl=fAl.includes(k)?fAl.filter(x=>x!==k):[...fAl,k];drawAlFilter();renderGrid()};
+}
+function drawChips(){ drawAlFilter();
   chipRow($("#colChips"),COLS,fCol,x=>{fCol=x;drawChips();renderGrid()});
   const fam=$("#famChips");
   fam.innerHTML=FAMS.map(x=>`<button class="chip ${x===fFam?"on":""}" data-k="f" data-x="${esc(x)}">${esc(x)}</button>`).join("")+
@@ -824,6 +872,7 @@ function renderGrid(){
     if(fCol==="Bartender Signature"&&!(d.custom&&d.type==="Signature"))return false;
     if(fFam!=="Any style"&&d.fam!==fFam)return false;
     if(fBase!=="Any spirit"&&d.base!==fBase)return false;
+    if(fAl.length&&conflicts(d,{keys:fAl},false).contains.length)return false;
     if(q){const hay=(d.n+" "+(d.creator||"")+" "+(d.desc||"")+" "+d.ing.map(i=>i[2]).join(" ")+" "+(d.gar||"")).toLowerCase(); if(!hay.includes(q))return false;}
     return true;
   });
@@ -839,6 +888,7 @@ function renderGrid(){
     <h3>${esc(d.n)}</h3>
     ${d.custom&&d.creator?`<div class="ings" style="color:var(--amber)">${d.type==="Signature"?"by ":"at "}${esc(d.creator)}${d.price?` · ${esc(d.price)}`:""}</div>`:""}
     <div class="ings">${esc(d.ing.map(x=>x[2].replace(/\s*\(.*?\)/g,"")).join(", "))}</div>
+    ${fAl.length&&conflicts(d,{keys:fAl},false).may.length?`<div class="note" style="margin:0;color:var(--gold)">⚠ Check first: ${esc(conflictText(conflicts(d,{keys:fAl},false)))}</div>`:""}
     <div class="garn"><b>Garnish:</b> ${esc(d.gar&&!/^none$/i.test(d.gar)?d.gar:"None")}</div>
     <div class="meta"><span>🥃 ${esc(d.glass)}</span><span>⚙ ${esc(d.method)}</span><span>${frac(liquidOz(d.ing))} oz</span></div>
   </article>`).join("");
@@ -865,6 +915,8 @@ function drawModal(d){
      <div><b>Glass</b>${esc(d.glass)}</div><div><b>Method</b>${esc(d.method)}</div>
      <div><b>Ice</b>${esc(d.ice)}</div>
    </div>
+   <div class="alline"><span class="note" style="margin:0 6px 0 0">Allergens</span>${alBadges(d,false)}</div>
+   ${(()=>{const a=allergensOf(d,false);const ns=[...Object.keys(a.m)].map(k=>AL_NOTES[k]).filter(Boolean);return ns.length?`<div class="note">${ns.map(esc).join(" ")}</div>`:""})()}
    <div class="row" style="justify-content:space-between">
      <div class="sect" style="margin:8px 0">Ingredients</div>
      <div class="scaler"><span class="note" style="margin:0">Batch</span>${[1,2,4,8].map(x=>`<button class="chip ${x===mult?"on":""}" data-m="${x}">×${x}</button>`).join("")}</div>
@@ -1397,6 +1449,7 @@ function renderRegs(){
   if(!list.length){g.innerHTML=`<div class="empty" style="grid-column:1/-1">${q?"No regulars match.":"No regulars yet. Add the guests who keep coming back, their usual, and exactly how they like it."}<br><br><button class="btn primary" onclick="openRegEditor()">+ Add a regular</button></div>`;return}
   g.innerHTML=list.map(r=>`<article class="card reg" data-id="${esc(r.id)}">
     <div class="who">${avatarHTML(r)}<div><h3>${esc(r.name)}</h3><div class="note" style="margin:0">${(()=>{const g=guestScore(r);return `<span class="tag tier tier-${g.tier.replace(/\s+/g,"-").toLowerCase()}">${esc(g.tier)}</span> ${g.score!=null?`<span class="starsTxt" style="font-size:12px">${starsTxt(g.avg)}</span>`:""}`})()} ${r.lastVisit?`Last in ${new Date(r.lastVisit).toLocaleDateString(undefined,{month:"short",day:"numeric"})}`:""}</div></div></div>
+    ${(()=>{const ga=regAllergy(r);return ga.status==="has"?`<div class="alert small"><b>⚠ ${esc([...ga.keys.map(alName),ga.other].filter(Boolean).join(", "))}</b><span>${esc(ga.sev)}</span></div>`:ga.status==="unknown"?`<div class="note" style="margin:0;color:var(--gold)">⚠ Allergies not asked yet</div>`:""})()}
     ${r.usual?`<div class="usual"><span class="note" style="margin:0">Usual</span><b>${esc(r.usual)}</b>${prefLines(r).length?`<span style="color:var(--amber)">${esc(prefLines(r).slice(0,3).join(" · "))}</span>`:""}</div>`:""}
     <div class="tags">${(r.likes||[]).slice(0,3).map(t=>`<span class="tag dz">${esc(flavorName(t))}</span>`).join("")}${(r.interests||[]).slice(0,2).map(t=>`<span class="tag">${esc(t)}</span>`).join("")}${(r.tags||[]).slice(0,1).map(t=>`<span class="tag">${esc(t)}</span>`).join("")}${r.na?`<span class="tag">Zero-proof</span>`:""}</div>
   </article>`).join("");
@@ -1435,8 +1488,9 @@ function forgetGuest(r){
     closeModal(); renderRegs(); drawFeedback(); drawPairing(); toast(`${r.name} was forgotten`);
   },"Forget forever");
 }
-function openRegEditor(id){
-  const r=id?regStore.items.find(x=>x.id===id):{};
+function openRegEditor(id,preset){
+  const r=id?regStore.items.find(x=>x.id===id):(preset||{});
+  const ga0=regAllergy(r); let alStatus=ga0.status, alSev=ga0.sev||"Allergy";
   let photo=r.photo||"", consentAt=r.photoConsentAt||0;
   const names=[...new Set([...DRINKS,...custom].map(d=>d.n).concat(DZ.filter(d=>d.k==="cocktail").map(d=>d.n)))].sort();
   const m=$("#modal");
@@ -1445,6 +1499,16 @@ function openRegEditor(id){
   <form class="form" id="regForm" autocomplete="off">
     <div class="field"><label>Name</label><input id="rName" required value="${esc(r.name||"")}" placeholder="First name and last initial works"></div>
     <div class="field"><label>How to spot them / notes</label><input id="rNotes" value="${esc(r.notes||"")}" placeholder="End of the bar on Thursdays, works at the lab"></div>
+    <div class="alsection">
+      <div class="sect" style="margin:0 0 8px;color:var(--red)">⚠ Allergies and dietary (ask first)</div>
+      <div class="seg" id="rAlStatus">${[["unknown","Not asked yet"],["none","No known allergies"],["has","Has allergies"]].map(([k,l])=>`<button type="button" class="${k===alStatus?"on":""}" data-st="${k}">${l}</button>`).join("")}</div>
+      <div id="rAlBody" style="${alStatus==="has"?"":"display:none"}">
+        <div class="row" id="rAlChips" style="margin-top:10px">${alChips(ALLERGENS,ga0.keys)}</div>
+        <div class="field" style="margin-top:10px"><label>How serious</label><div class="seg" id="rAlSev">${SEVERITY.map(x=>`<button type="button" class="${x===alSev?"on":""}" data-s="${esc(x)}">${esc(x)}</button>`).join("")}</div></div>
+        <div class="field" style="margin-top:10px"><label>Anything else to keep out</label><input id="rAllergy" value="${esc(ga0.other||"")}" placeholder="Mint, raw onion, artificial sweeteners"></div>
+      </div>
+      <div class="row" style="margin-top:10px"><button type="button" class="btn small" id="rAlAsk">Hand to guest: let them tap it in</button></div>
+    </div>
     <div class="sect" style="margin:6px 0 0">Photo (only with the guest's OK)</div>
     <div class="photorow">
       <div id="rPhotoPrev">${avatarHTML({...r,photo,name:r.name||"?"},72)}</div>
@@ -1478,7 +1542,6 @@ function openRegEditor(id){
     <div class="field"><label>Go-to spirits</label><div class="row" id="rSpirits">${chipPick(SPIRITS.map(x=>[x,x]),r.spirits||[])}</div></div>
     <div class="field"><label>Won't drink</label><div class="row" id="rNoSp">${chipPick(SPIRITS.map(x=>[x,x]),r.noSpirits||[],"avoid")}</div></div>
     <div class="toggle" style="border:none"><div>Zero-proof only<small>Only suggest non-alcoholic drinks.</small></div><label class="switch"><input type="checkbox" id="rNa" ${r.na?"checked":""}><span></span></label></div>
-    <div class="field"><label>Allergies or ingredients to avoid</label><input id="rAllergy" value="${esc(r.allergy||"")}" placeholder="Nuts, egg white, dairy"></div>
     <div class="field"><label>Favorite dishes</label><input id="rFood" value="${esc((r.foods||[]).join(", "))}" list="foodNames" placeholder="Margherita, Bistecca"><datalist id="foodNames">${FOOD.map(f=>`<option value="${esc(f.n)}">`).join("")}</datalist></div>
     <div class="row" style="justify-content:space-between;margin-top:6px">
       ${id?`<button type="button" class="btn danger" id="rDel">Forget this guest</button>`:"<span></span>"}
@@ -1497,6 +1560,13 @@ function openRegEditor(id){
   $("#rTagAdd").onclick=addTag; $("#rTagIn").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();addTag()}};
   m.onclick=e=>{ if(e.target.closest(".x"))return closeModal();
     if(e.target.closest("[data-rm]")){e.target.closest(".ctag").remove();return}
+    const st=e.target.closest("#rAlStatus button"); if(st){alStatus=st.dataset.st;$$("#rAlStatus button").forEach(b=>b.classList.toggle("on",b===st));$("#rAlBody").style.display=alStatus==="has"?"":"none";return}
+    const sv=e.target.closest("#rAlSev button"); if(sv){alSev=sv.dataset.s;$$("#rAlSev button").forEach(b=>b.classList.toggle("on",b===sv));return}
+    if(e.target.id==="rAlAsk"){ const cur={keys:$$("#rAlChips .chip.on").map(b=>b.dataset.al),sev:alSev,other:$("#rAllergy").value};
+      openAllergyIntake({name:$("#rName").value,preset:cur,onDone:res=>{alStatus=res.status;alSev=res.sev||"Allergy";
+        $$("#rAlStatus button").forEach(b=>b.classList.toggle("on",b.dataset.st===alStatus));$("#rAlBody").style.display=alStatus==="has"?"":"none";
+        $$("#rAlChips .chip").forEach(b=>b.classList.toggle("on",res.keys.includes(b.dataset.al)));$$("#rAlSev button").forEach(b=>b.classList.toggle("on",b.dataset.s===alSev));$("#rAllergy").value=res.other||"";
+        document.body.style.overflow="hidden";toast(res.status==="none"?"No allergies noted":"Allergies added")}}); return }
     const c=e.target.closest(".row .chip:not(.ctag)"); if(c){c.classList.toggle("on");return}
     if(e.target.id==="rDel")forgetGuest(r); };
   $("#regForm").onsubmit=async e=>{
@@ -1507,7 +1577,9 @@ function openRegEditor(id){
       call:$("#rCall").value.trim(),strength:$("#rStrength").value,ice:$("#rIce").value,sweet:$("#rSweet").value,glass:$("#rGlass").value,garnish:$("#rGarn").value.trim(),mods:$("#rMods").value.trim(),
       interests:pick("#rInts"),tags:$$("#rTags .ctag").map(b=>b.dataset.v),talk:$("#rTalk").value.trim(),
       photo:consent?photo:"",photoConsentAt:consent&&photo?consentAt:0,
-      likes:pick("#rLikes"),avoid:pick("#rAvoid"),spirits:pick("#rSpirits"),noSpirits:pick("#rNoSp"),na:$("#rNa").checked,allergy:$("#rAllergy").value.trim(),
+      likes:pick("#rLikes"),avoid:pick("#rAvoid"),spirits:pick("#rSpirits"),noSpirits:pick("#rNoSp"),na:$("#rNa").checked,allergy:alStatus==="has"?$("#rAllergy").value.trim():"",
+      allergyStatus:alStatus,allergens:alStatus==="has"?$$("#rAlChips .chip.on").map(b=>b.dataset.al):[],allergySeverity:alStatus==="has"?alSev:"",
+      allergyCheckedAt:alStatus===ga0.status&&JSON.stringify(ga0.keys)===JSON.stringify(alStatus==="has"?$$("#rAlChips .chip.on").map(b=>b.dataset.al):[])&&ga0.at?ga0.at:(alStatus==="unknown"?0:Date.now()),
       foods:$("#rFood").value.split(",").map(x=>x.trim()).filter(Boolean),lastVisit:r.lastVisit||0,visits:r.visits||0,ratings:r.ratings||[],createdAt:r.createdAt||Date.now()};
     delete obj.src;
     if(!obj.name)return;
@@ -1524,7 +1596,12 @@ function openReg(id){
   m.innerHTML=`<button class="x" aria-label="Close">×</button>
    <div class="who" style="display:flex;gap:14px;align-items:center">${avatarHTML(r,72)}<div><h2 style="margin:0">${esc(r.name)}</h2>${r.notes?`<div class="desc" style="margin:2px 0 0">${esc(r.notes)}</div>`:""}
      <div class="row" style="margin-top:6px;gap:6px"><span class="tag tier tier-${g.tier.replace(/\s+/g,"-").toLowerCase()}">${esc(g.tier)}</span>${g.score!=null?`<span class="starsTxt">${starsTxt(g.avg)}</span>`:""}<span class="note" style="margin:0">${g.visits} visit${g.visits===1?"":"s"}</span></div></div></div>
-   ${r.allergy?`<div class="callout" style="margin-top:12px;background:#3a201c;border-color:#6b3a33"><b style="color:var(--red)">Avoid:</b> ${esc(r.allergy)}</div>`:""}
+   ${(()=>{const ga=regAllergy(r); if(ga.status==="has"){const uc=d?conflicts(d,ga,false):{contains:[],may:[]};
+      return `<div class="alert" style="margin-top:12px"><b>⚠ ALLERGY: ${esc([...ga.keys.map(alName),ga.other].filter(Boolean).join(", "))}</b><span>${esc(ga.sev)}${ga.at?` · confirmed ${new Date(ga.at).toLocaleDateString(undefined,{month:"short",day:"numeric"})}`:""}</span>
+        ${uc.contains.length||uc.may.length?`<span style="display:block;margin-top:6px">Their usual (${esc(r.usual)}) ${esc(conflictText(uc))}. Adjust before you pour.</span>`:""}
+        ${crossTips(ga).length?`<details style="margin-top:6px"><summary style="cursor:pointer">At the bar</summary><ul class="tips">${crossTips(ga).map(t=>`<li>${esc(t)}</li>`).join("")}</ul></details>`:""}</div>`}
+     if(ga.status==="none")return `<div class="note" style="margin-top:10px;color:var(--green)">✓ No known allergies${ga.at?` (checked ${new Date(ga.at).toLocaleDateString(undefined,{month:"short",day:"numeric"})})`:""}</div>`;
+     return `<div class="alert ask" style="margin-top:12px"><b>Allergies not asked yet</b><span>Ask before you pour.</span><button class="btn small" data-act="al-ask" style="margin-top:8px">Hand to guest now</button></div>`})()}
    <div class="sect">Their usual</div>
    ${r.usual?`<div class="callout"><b style="font-size:17px">${esc(r.usual)}</b>${pl.length?`<ul>${pl.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:`<div class="note">Made to spec.</div>`}
      ${d&&d.ing?`<div class="row" style="margin-top:10px"><button class="btn small" data-act="recipe">Open recipe</button></div>`:d&&d.k?`<div class="note">On the DZ menu: ${esc(d.d)}</div>`:""}</div>`:`<div class="note">No usual saved yet.</div>`}
@@ -1557,6 +1634,7 @@ function openReg(id){
     const a=e.target.closest("[data-act]"); if(!a)return;
     const act=a.dataset.act;
     if(act==="forget"){forgetGuest(r);return}
+    if(act==="al-ask"){openAllergyIntake({name:r.name,onDone:async res=>{await regStore.save({...r,allergyStatus:res.status,allergens:res.keys,allergySeverity:res.status==="has"?res.sev:"",allergy:res.other,allergyCheckedAt:Date.now()});document.body.style.overflow="hidden";openReg(r.id);toast("Allergies saved")}});return}
     if(act==="recipe"&&d){openDrink(d)}
     if(act==="edit")openRegEditor(r.id);
     if(act==="served"){ if(r.lastVisit&&sameDay(r.lastVisit,Date.now())){toast("Already logged today");return} await regStore.save({...r,lastVisit:Date.now(),visits:(r.visits||0)+1});toast(`Logged a visit for ${first}`);openReg(r.id)}
@@ -1667,15 +1745,15 @@ function drawOffers(r){
   const box=$("#offers"); if(!box)return;
   if(regTab==="new")return drawCreations(r);
   const pool=pairPool().filter(x=>regTab==="dz"?x.src==="dz"&&(r.na?x.t.includes("na"):x.k==="cocktail"):x.src==="lib"&&!r.na);
-  const ranked=pool.map(x=>({x,...profileAdj(x,r)})).filter(o=>o.x.n.toLowerCase()!==(r.usual||"").toLowerCase()).sort((a,b)=>b.s-a.s).slice(0,4);
+  const gaR=regAllergy(r); let alHidden=0;
+  const ranked=pool.filter(x=>{if(unsafe(conflicts(x,gaR,false),gaR)){alHidden++;return false}return true}).map(x=>({x,...profileAdj(x,r)})).filter(o=>o.x.n.toLowerCase()!==(r.usual||"").toLowerCase()).sort((a,b)=>b.s-a.s).slice(0,4);
   if(r.na&&regTab==="lib"){box.innerHTML=`<div class="note">${esc(r.name.split(" ")[0])} is zero-proof. Check the DZ menu tab for mocktails or the New creations tab.</div>`;return}
   if(!(r.likes||[]).length&&!(r.spirits||[]).length){box.innerHTML=`<div class="note">Add what they love and their go-to spirits (Edit) to get tailored picks.</div>`}
   else box.innerHTML="";
   box.innerHTML+=ranked.map(o=>`<div class="offer"><div class="row" style="justify-content:space-between"><h4>${esc(o.x.n)}</h4>${o.x.p?`<b>${esc(o.x.p)}</b>`:""}</div>
-    <div class="why">${esc(o.why.join(". ")||"A good change of pace")}${allergyHit(o.x,r)?` <b style="color:var(--red)">Check: may contain ${esc(allergyHit(o.x,r))}.</b>`:""}</div>
-    <div class="note">${esc(o.x.d)}</div>${o.x.ref?`<button class="btn small" style="margin-top:8px" data-act="open-lib" data-n="${esc(o.x.n)}">Open recipe</button>`:""}</div>`).join("");
+    <div class="why">${esc(o.why.join(". ")||"A good change of pace")}${allergyHit(o.x,r)?` <b style="color:var(--gold)">Check first: ${esc(allergyHit(o.x,r))}.</b>`:""}</div>
+    <div class="note">${esc(o.x.d)}</div>${o.x.ref?`<button class="btn small" style="margin-top:8px" data-act="open-lib" data-n="${esc(o.x.n)}">Open recipe</button>`:""}</div>`).join("")+(alHidden?`<div class="note" style="color:var(--red)">⚠ ${alHidden} left out for ${esc(r.name.split(" ")[0])}'s allergies.</div>`:"");
 }
-function allergyHit(x,r){ if(!r.allergy)return ""; const txt=(x.d||"").toLowerCase(); return r.allergy.split(/[,;]/).map(a=>a.trim()).filter(a=>{if(!a)return false;const stem=a.toLowerCase().replace(/(es|s)$/,"").replace(/[.*+?^${}()|[\]\\]/g,"\\$&");return new RegExp("\\b"+stem+"(s|es)?\\b").test(txt)||(/nut/.test(stem)&&/frangelico|amaretto|orgeat|hazelnut|pistachio|almond/.test(txt))||(/egg/.test(stem)&&/egg white/.test(txt))}).join(", "); }
 
 /* ---------- offline creation engine ---------- */
 let genSeed=0;
@@ -1736,16 +1814,6 @@ const NA_TEMPLATES=[
  {n:"Fragola Lemonade",tags:["fruity","sweet"],glass:"Collins",method:"Shake",ice:"Cubed",gar:"Berries",ing:[[1,"oz","Strawberry purée","Syrups & Sweeteners"],[3,"oz","Lemonade","Mixers & Top"],[0.25,"oz","Hibiscus extract","Syrups & Sweeteners"],[1,"top","Soda water","Mixers & Top"]]},
  {n:"Espresso Tonic",tags:["coffee","bubbly"],glass:"Highball",method:"Build",ice:"Cubed",gar:"Orange peel",ing:[[4,"oz","Tonic water","Mixers & Top"],[1.5,"oz","Fresh espresso (floated)","Dairy, Egg & Coffee"]]}
 ];
-function allergyBlock(r){
-  const a=(r.allergy||"").toLowerCase(); const rules=[];
-  if(/nut|almond|hazelnut|pistachio/.test(a))rules.push(/frangelico|amaretto|orgeat|nocino|hazelnut|almond/i);
-  if(/egg/.test(a))rules.push(/egg white/i);
-  if(/dairy|milk|lactose|cream/.test(a))rules.push(/cream|milk|irish cream/i);
-  if(/citrus|lime|lemon/.test(a))rules.push(/lime|lemon|limoncello|grapefruit|orange/i);
-  if(/gluten|wheat/.test(a))rules.push(/stout|beer/i);
-  a.split(/[,;]/).map(x=>x.trim()).filter(x=>x.length>3).forEach(x=>rules.push(new RegExp(x.replace(/[.*+?^${}()|[\]\\]/g,"\\$&").replace(/s$/,""),"i")));
-  return item=>rules.some(re=>re.test(item));
-}
 function sanitize(ing,r,blocked){
   const sweetDown=(r.avoid||[]).includes("sweet")||/less sweet|dry/i.test(r.sweet||"");
   const sweetUp=/sweeter/i.test(r.sweet||"");
@@ -1778,6 +1846,9 @@ function pairNote(tags,r){
   return best&&best.s>0?`Pairs with ${favs.length?"their ":"the "}${best.f.n}.`:"";
 }
 function finishCreation(c,r){
+  const ga=regAllergy(r);
+  if(ga.status==="has"&&c.gar){ const a=textAllergens(c.gar); if(ga.keys.some(k=>a.c[k]||a.m[k]))c.gar=ga.keys.includes("citrus")?"Rosemary sprig":"None"; }
+  if(ga.status==="has"&&!c.ai)c.why=(c.why||"")+` Allergy-safe for ${[...ga.keys.map(alName),ga.other].filter(Boolean).join(", ").toLowerCase()}, per our specs.`;
   const d={...c,ing:c.ing,gar:c.gar,glass:c.glass,method:c.method,ice:c.ice};
   c.steps=autoSteps(d);
   c.ing=c.ing.map(x=>x.slice(0,3));
@@ -1827,7 +1898,9 @@ function makeCreations(r,seed){
     const okAcc=l=>ACCENTS[l]&&!(citrusy&&["coffee","creamy"].includes(l))&&!(t.k==="doppio"&&["citrus","fruity","spicy"].includes(l));
     const accFlavor=likes.find(l=>!t.tags.includes(l)&&okAcc(l))||t.tags.find(l=>okAcc(l));
     const acc=accFlavor?pick(ACCENTS[accFlavor].filter(x=>!blocked(x[2])&&!(x[2]==="Mezcal"&&b.key==="Tequila & Mezcal")),rand):null;
-    let ing=sanitize(t.build(b.bottle,acc||undefined,r),r,blocked);
+    const built=t.build(b.bottle,acc||undefined,r).filter(Boolean);
+    if(built.some(x=>x!==acc&&x[1]==="oz"&&x[0]>=0.5&&blocked(x[2])&&!/egg white|amaretto|frangelico|orgeat/i.test(x[2])))continue;
+    let ing=sanitize(built,r,blocked);
     const seen=new Set(); ing=ing.filter(x=>{const k=x[2];if(seen.has(k))return false;seen.add(k);return true});
     const accUsed=acc&&ing.some(x=>x[2]===acc[2]);
     const tags=[...new Set([...t.tags,...(accUsed?[accFlavor]:[])])];
@@ -1859,7 +1932,7 @@ Guest profile:
 - Loves: ${(r.likes||[]).map(flavorName).join(", ")||"open to anything"}
 - Avoids flavors: ${(r.avoid||[]).map(flavorName).join(", ")||"none"}
 - Go-to spirits: ${(r.spirits||[]).join(", ")||"any"}; won't drink: ${(r.noSpirits||[]).join(", ")||"none"}
-- Allergies / never use: ${r.allergy||"none"}
+- Allergies / never use (STRICT, never include these or anything that may contain them): ${(()=>{const g=regAllergy(r);return g.status==="has"?[...g.keys.map(alName),g.other].filter(Boolean).join(", ")+" ("+g.sev+")":"none known"})()}
 - Favorite dishes: ${(r.foods||[]).join(", ")||"unknown"}
 Prefer ingredients a bar like this stocks, for example: ${bar}, plus standard spirits, citrus, syrups, Italian amari and aperitivi.
 Rules: real, balanced specs in US ounces using quarter-ounce steps; dashes for bitters; unit must be one of oz, dash, tsp, barspoon, top, rinse, leaves, slices, whole, pinch, splash. Fun Italian-leaning names. No em dashes in any text.
@@ -1882,6 +1955,8 @@ async function saveCreation(c,r){
 }
 
 /* ---------- pairing UI (two-way) ---------- */
+let pAl=[], pAlOther="";
+function pairGA(reg){const g=regAllergy(reg);const keys=[...new Set([...(g.status==="has"?g.keys:[]),...pAl])];return {status:keys.length||g.other||pAlOther?"has":"none",keys,sev:/severe/i.test(g.sev||"")?g.sev:"Allergy",other:[g.other,pAlOther].filter(Boolean).join(", ")}}
 let pMode="food", pSel=new Set(), dSel=new Set(), pCat="All", dCat="DZ cocktails", pKind="all", fKind="All", pGuestId="";
 const PKINDS=[["all","Everything"],["cocktail","DZ cocktails"],["wine","Wine"],["beer","Beer"],["classic","Classics"],["zero","Zero-proof"]];
 const DCATS=[["DZ cocktails",x=>x.src==="dz"&&x.k==="cocktail"],["Wine",x=>x.k==="wine"],["Beer",x=>x.k==="beer"],["Zero-proof",x=>x.k==="zero"],["Classics",x=>x.src==="lib"],["Coffee",x=>x.k==="coffee"]];
@@ -1890,12 +1965,15 @@ function drawGuestSelect(){
   const s=$("#pGuest"); if(!s)return;
   s.innerHTML=`<option value="">Any guest</option>`+regStore.items.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(r=>`<option value="${esc(r.id)}" ${r.id===pGuestId?"selected":""}>${esc(r.name)}</option>`).join("");
 }
-function foodAllergy(f,r){ if(!r||!r.allergy)return ""; return allergyHit({d:f.n+" "+f.d},r); }
 function drawPairing(){
   if(!$("#pModes"))return;
   const n=(pMode==="food"?pSel:dSel).size, j=$("#pJump"); if(j){j.classList.toggle("on",n>0&&location.hash==="#pairing");j.textContent=pMode==="food"?"See drink picks ↑":"See food picks ↑"}
   drawGuestSelect();
   const reg=regStore.items.find(r=>r.id===pGuestId), first=reg?reg.name.split(" ")[0]:"";
+  const gaReg=regAllergy(reg);
+  $("#pAlNote").innerHTML=reg?(gaReg.status==="has"?`<div class="alert small"><b>⚠ ${esc(first)}: ${esc([...gaReg.keys.map(alName),gaReg.other].filter(Boolean).join(", "))}</b><span>${esc(gaReg.sev)}</span></div>`:gaReg.status==="none"?`<div class="note" style="margin:0 0 6px;color:var(--green)">${esc(first)} has no known allergies.</div>`:`<div class="note" style="margin:0 0 6px;color:var(--gold)">Allergies not asked yet for ${esc(first)}. Ask before you pour.</div>`):"";
+  $("#pAlChips").innerHTML=alChips(ALLERGENS,pAl,"sm");
+  const ga=pairGA(reg); let hidden=0;
   $("#pModes").innerHTML=[["food","Drink for their food"],["drink","Food for their drink"]].map(([k,l])=>`<button class="${k===pMode?"on":""}" data-m="${k}">${l}</button>`).join("");
   const q=$("#pFoodQ").value.toLowerCase().trim();
   if(pMode==="food"){
@@ -1910,14 +1988,17 @@ function drawPairing(){
     if(!foods.length){box.innerHTML=`<div class="empty">Tap one or more dishes to see what to pour.${reg&&(reg.foods||[]).length?`<br><br><button class="btn small" id="pFav">Use ${esc(first)}'s favorite dishes</button>`:""}</div>`;return}
     let pool=pairPool().filter(x=>pKind==="all"?x.k!=="coffee"||foods.some(f=>f.cat==="Dessert"):pKind==="classic"?x.src==="lib":x.k===pKind);
     if(reg&&reg.na)pool=pool.filter(x=>x.t.includes("na"));
+    pool=pool.filter(x=>{if(unsafe(conflicts(x,ga,false),ga)){hidden++;return false}return true});
     let ranked=pool.map(x=>({x,...scoreDrink(x,foods,reg)})).filter(o=>o.s>0).sort((a,b)=>b.s-a.s);
     if(pKind==="all"){const per={},cap={classic:3,cocktail:2,wine:3,beer:1,zero:1,coffee:2};ranked=ranked.filter(o=>{const k=o.x.src==="lib"?"classic":o.x.k;per[k]=(per[k]||0)+1;return per[k]<=(cap[k]||2)})}
     ranked=ranked.slice(0,8); const max=ranked[0]?.s||1;
     box.innerHTML=ranked.length?ranked.map(o=>`<div class="pr" ${o.x.ref?`data-n="${esc(o.x.n)}" style="cursor:pointer"`:""}>
       <div><span class="tag ${o.x.src==="dz"?"dz":"classic"}">${o.x.src==="dz"?({cocktail:"DZ cocktail",wine:"Wine",beer:"Beer",zero:"Zero-proof",coffee:"Caffè"})[o.x.k]:"Classic"}</span><h4 style="margin-top:4px">${esc(o.x.n)}</h4></div>
       <b>${o.x.p?"$"+esc(o.x.p):""}</b>
-      <div class="why">${esc(o.why.join(". "))}.${reg&&allergyHit(o.x,reg)?` <b style="color:var(--red)">Check allergy: ${esc(allergyHit(o.x,reg))}.</b>`:""}</div>
-      <div class="bar"><i style="width:${Math.round(o.s/max*100)}%"></i></div></div>`).join(""):`<div class="empty">Nothing strong in this category. Try Everything.</div>`;
+      <div class="why">${esc(o.why.join(". "))}.${conflictText(conflicts(o.x,ga,false))?` <b style="color:var(--gold)">Check first: ${esc(conflictText(conflicts(o.x,ga,false)))}.</b>`:""}</div>
+      <div class="bar"><i style="width:${Math.round(o.s/max*100)}%"></i></div></div>`).join("")+(hidden?`<div class="note" style="color:var(--red)">⚠ ${hidden} drink${hidden===1?"":"s"} left out because they contain ${esc([...ga.keys.map(alName),ga.other].filter(Boolean).join(", ").toLowerCase())}.</div>`:""):`<div class="empty">Nothing strong in this category. Try Everything.</div>`;
+    const foodWarn=foods.map(f=>[f,conflicts(f,ga,true)]).filter(([f,c])=>c.contains.length||c.may.length);
+    if(foodWarn.length)box.insertAdjacentHTML("afterbegin",`<div class="alert small"><b>⚠ Check the food too</b><span>${foodWarn.map(([f,c])=>`${esc(f.n)}: ${esc(conflictText(c))}`).join("<br>")}</span></div>`);
   } else {
     $("#pPickTitle").textContent="What are they drinking?"; $("#pFoodQ").placeholder="Search drinks"; $("#pResTitle").textContent="Order this"; $("#pClear").textContent="Clear drinks";
     $("#pFoodCats").innerHTML=DCATS.map(([c])=>`<button class="chip ${c===dCat?"on":""}" data-c="${esc(c)}">${esc(c)}</button>`).join("");
@@ -1933,17 +2014,19 @@ function drawPairing(){
     if(!drinks.length){box.innerHTML=`<div class="empty">Tap the drink they ordered to see what to eat with it.${usual?`<br><br><button class="btn small" id="pUsual">Use ${esc(first)}'s usual</button>`:""}</div>`;return}
     const fFn=(FKINDS.find(k=>k[0]===fKind)||FKINDS[0])[1];
     const favs=(reg&&reg.foods||[]).map(x=>x.toLowerCase());
-    let ranked=FOOD.filter(fFn).map(f=>{let s=0;const why=new Map();
+    let ranked=FOOD.filter(fFn).filter(f=>{if(unsafe(conflicts(f,ga,true),ga)){hidden++;return false}return true}).map(f=>{let s=0;const why=new Map();
       drinks.forEach(dr=>{const r=scoreDrink(dr,[f],null);s+=r.s;r.why.forEach(w=>why.set(w,(why.get(w)||0)+1))});
       const reasons=[...why.keys()].slice(0,2);
       if(favs.includes(f.n.toLowerCase())){s+=3;reasons.push(`One of ${first}'s favorites`)}
-      return {f,s,why:reasons,allergy:foodAllergy(f,reg)}}).filter(o=>o.s>0).sort((a,b)=>b.s-a.s);
+      return {f,s,why:reasons,allergy:conflictText(conflicts(f,ga,true))}}).filter(o=>o.s>0).sort((a,b)=>b.s-a.s);
     if(fKind==="All"){const per={};ranked=ranked.filter(o=>{const k=/Pizza/.test(o.f.cat)?"Pizza":o.f.cat;per[k]=(per[k]||0)+1;return per[k]<=(k==="Dessert"?2:3)})}
     ranked=ranked.slice(0,8); const max=ranked[0]?.s||1;
     box.innerHTML=ranked.length?ranked.map(o=>`<div class="pr">
       <div><span class="tag dz">${esc(o.f.cat)}</span><h4 style="margin-top:4px">${esc(o.f.n)}</h4></div><b></b>
-      <div class="why">${esc(o.f.d)}. <span style="color:var(--text)">${esc(o.why.join(". "))}.</span>${o.allergy?` <b style="color:var(--red)">Check allergy: ${esc(o.allergy)}.</b>`:""}</div>
-      <div class="bar"><i style="width:${Math.round(o.s/max*100)}%"></i></div></div>`).join(""):`<div class="empty">Nothing strong here. Try All.</div>`;
+      <div class="why">${esc(o.f.d)}. <span style="color:var(--text)">${esc(o.why.join(". "))}.</span>${o.allergy?` <b style="color:var(--gold)">Check first: ${esc(o.allergy)}.</b>`:""}</div>
+      <div class="bar"><i style="width:${Math.round(o.s/max*100)}%"></i></div></div>`).join("")+(hidden?`<div class="note" style="color:var(--red)">⚠ ${hidden} dish${hidden===1?"":"es"} left out because they contain ${esc([...ga.keys.map(alName),ga.other].filter(Boolean).join(", ").toLowerCase())}.</div>`:""):`<div class="empty">Nothing strong here. Try All.</div>`;
+    const drinkWarn=drinks.map(d=>[d,conflicts(d,ga,false)]).filter(([d,c])=>c.contains.length||c.may.length);
+    if(drinkWarn.length)box.insertAdjacentHTML("afterbegin",`<div class="alert small"><b>⚠ Their drink</b><span>${drinkWarn.map(([d,c])=>`${esc(d.n)}: ${esc(conflictText(c))}`).join("<br>")}</span></div>`);
   }
 }
 function initPairing(){
@@ -1953,6 +2036,7 @@ function initPairing(){
   $("#pFoodQ").oninput=drawPairing;
   $("#pKinds").onclick=e=>{const b=e.target.closest("button");if(!b)return;if(pMode==="food")pKind=b.dataset.k;else fKind=b.dataset.k;drawPairing()};
   $("#pGuest").onchange=e=>{pGuestId=e.target.value;drawPairing()};
+  $("#pAlChips").onclick=e=>{const c=e.target.closest(".chip");if(!c)return;const k=c.dataset.al;pAl=pAl.includes(k)?pAl.filter(x=>x!==k):[...pAl,k];drawPairing()};
   $("#pJump").onclick=()=>$("#v-pairing .pairside").scrollIntoView({behavior:"smooth",block:"start"});
   window.addEventListener("hashchange",()=>{if(location.hash!=="#pairing")$("#pJump").classList.remove("on")});
   $("#pClear").onclick=()=>{(pMode==="food"?pSel:dSel).clear();drawPairing()};
@@ -1973,6 +2057,7 @@ function drawMenu(){
   $("#mKinds").innerHTML=[["cocktail","Cocktails"],["zero","Zero-proof"],["beer","Beer"],["wine","Wine by the glass"]].map(([k,l])=>`<button class="${k===mKind?"on":""}" data-k="${k}">${l}</button>`).join("");
   $("#mList").innerHTML=DZ.filter(d=>d.k===mKind).map((d,i)=>`<div class="mitem"><div class="top"><h4>${esc(d.n)}</h4><b>${typeof d.p==="number"?"$"+d.p:"$"+esc(d.p)}</b></div>
     <p>${esc(d.d)}</p><div class="tags" style="margin-top:6px">${d.t.filter(t=>FLAVORS.some(f=>f[0]===t)).map(t=>`<span class="tag">${esc(flavorName(t))}</span>`).join("")}</div>
+    <div class="tags" style="margin-top:6px">${alBadges(d,false)}</div>
     <div class="pairs">Pairs with: ${esc(topFoodsFor(d).join(", ")||"most of the menu")}</div>
     ${d.spec?`<button class="btn small" style="margin-top:8px" data-spec="${esc(d.n)}">Write the spec</button>`:""}</div>`).join("");
 }
@@ -2006,9 +2091,192 @@ function initBackup(){
     },"Restore");
   };
 }
+/* ---------- allergen engine ---------- */
+const ALLERGENS=[["dairy","Dairy / milk"],["egg","Eggs"],["treenut","Tree nuts"],["peanut","Peanuts"],["wheat","Gluten / wheat"],["fish","Fish"],["shellfish","Shellfish"],["soy","Soy"],["sesame","Sesame"],["sulfites","Sulfites"],["citrus","Citrus"],["coconut","Coconut"],["celery","Celery"]];
+const SEVERITY=["Preference","Intolerance","Allergy","Severe (EpiPen)"];
+const alName=k=>(ALLERGENS.find(a=>a[0]===k)||[k,k])[1];
+const DRINK_AL={
+ dairy:[/\b(heavy cream|whipped cream|cream|milk|irish cream|baileys|cappuccino|latte|half and half)\b/i,null],
+ egg:[/\begg whites?\b|\beggs?\b/i,/marshmallow/i],
+ treenut:[/frangelico|hazelnut|orgeat|almond|pistachio|walnut|pecan|nocino/i,/amaretto|disaronno/i],
+ peanut:[/peanut/i,null],
+ wheat:[/\b(beer|stout|lager|ipa|ale|pilsner|bionda|blonde|peroni|corona|menabrea|allagash|almanac|malt)\b/i,/bourbon|\brye\b|whisk|scotch|four roses/i],
+ fish:[/worcestershire|anchov/i,null],
+ shellfish:[/\bclam/i,null],
+ soy:[/\bsoy/i,null],
+ sesame:[/sesame/i,null],
+ sulfites:[/\bwine\b|prosecco|champagne|vermouth|lillet|lambrusco|\bros[eé]\b|chardonnay|pinot|cabernet|chianti|barbera|montepulciano|super tuscan|cannonau|aglianico|brunello|falanghina|gavi|vermentino|sauvignon|sparkling|spumante|\bbrut\b/i,/maraschino|brandied|cherr|grenadine|lemonade/i],
+ citrus:[/\blime|lemon|orange|grapefruit|cointreau|triple sec|cura[cç]ao|limoncello|citrus|yuzu|starry|sprite/i,/aperol|campari|crodino/i],
+ coconut:[/coconut/i,null],
+ celery:[/celery/i,null]
+};
+const AL_NOTES={wheat:"Distilled grain spirits are usually considered gluten-free, but some guests avoid them.",treenut:"Amaretto is often made from apricot kernels, but some brands use almonds. Check the bottle.",
+ egg:"Marshmallows can contain egg white.",sulfites:"Maraschino and brandied cherries, grenadine and bottled lemonade can contain sulfites.",citrus:"Aperol, Campari and Crodino are flavored with bitter orange."};
+/* DZ food: c = listed or standard ingredient, m = may contain (fryer, fresh pasta, kitchen practice) */
+const FOOD_AL={
+ "Olives":{c:["citrus"]},"Truffle Fries":{c:["dairy"],m:["wheat"]},"Broccolini":{},"Carciofi Fritti":{c:["dairy","egg","citrus"],m:["wheat"]},
+ "Potato Croquettes":{c:["dairy","wheat","egg"]},"Polpettine":{c:["wheat"],m:["egg","dairy"]},"Fave e Cavolo":{c:["dairy"]},"Prosciutto and Burrata":{c:["dairy"]},
+ "Burrata":{c:["dairy","wheat","treenut"]},"Cauliflower":{c:["wheat","dairy","egg"]},"Beets":{c:["dairy","treenut","citrus"]},"Il Polpo":{c:["shellfish","fish"]},
+ "Fried Calamari and Shrimp":{c:["shellfish","wheat","egg"]},"Porchetta":{c:["dairy"]},"Melanzana alla Parmigiana":{c:["dairy"],m:["wheat","egg"]},
+ "Pera Salad":{c:["dairy","citrus"]},"Little Gem":{c:["fish","dairy","wheat"],m:["egg"]},"Gnocchi":{c:["wheat","dairy"],m:["egg"]},
+ "Spaghetti Pescatore":{c:["wheat","shellfish"],m:["egg","sulfites"]},"Lasagna":{c:["wheat","dairy"],m:["egg"]},"Ravioli":{c:["wheat","dairy"],m:["egg"]},
+ "Fettuccine Oxtail":{c:["wheat","dairy"],m:["egg","sulfites","celery"]},"Marechiaro":{c:["wheat","shellfish"],m:["egg","sulfites"]},"Ravioli Vegani":{},
+ "Rigatoni Pork Belly":{c:["wheat","dairy"]},"Pollo Arrosto":{},"Bistecca":{m:["wheat"]},"Lamb Shank":{m:["dairy","sulfites","celery"]},
+ "Zuppa di Pesce":{c:["fish","shellfish","wheat"],m:["celery","sulfites"]},"Salmone alla Griglia":{c:["fish"],m:["shellfish"]},"Branzino":{c:["fish","wheat"]},
+ "Margherita":{c:["wheat","dairy"]},"Pulcinella":{c:["wheat","dairy"],m:["treenut"]},"Diavoletta":{c:["wheat","dairy"]},"Jalapeño":{c:["wheat","dairy"]},
+ "Carne Mia":{c:["wheat","dairy"]},"Bufalina":{c:["wheat","dairy"]},"Salsiccia":{c:["wheat","dairy"]},"Hot Honey":{c:["wheat","dairy"]},
+ "Formaggi and Sage":{c:["wheat","dairy"]},"Pera Pizza":{c:["wheat","dairy"]},"Doppio Zero":{c:["wheat","dairy"]},"Al Sud":{c:["wheat","dairy"]},
+ "Mortadella":{c:["wheat","dairy","treenut"]},"Fungo":{c:["wheat","dairy"]},"Carciofina":{c:["wheat","dairy"],m:["treenut"]},"Arlecchino":{c:["wheat","dairy"]},
+ "Calzone":{c:["wheat","dairy"]},"Fried Calzone":{c:["wheat","dairy"]},"Pizza Vegana":{c:["wheat"],m:["soy","treenut","coconut"]},
+ "Tiramisu":{c:["dairy","egg","wheat"]},"Panna Cotta":{c:["dairy"]},"Lemon Cake":{c:["wheat","egg","dairy","citrus"]},"Chocolate Cake":{c:["wheat","egg","dairy"],m:["soy"]},
+ "Profiteroles":{c:["wheat","egg","dairy"]},"Cannolo":{c:["wheat","dairy","treenut"]}
+};
+const FOOD_WHY={wheat:{c:"dough, pasta, bread or batter",m:"shared fryer or kitchen"},egg:{c:"egg in the recipe or sauce",m:"fresh pasta and sauces often use egg"},dairy:{c:"cheese or cream",m:"often finished with butter or cheese"},
+ treenut:{c:"nuts on the plate",m:"pesto and vegan cheese can contain nuts"},fish:{c:"anchovy or fish"},shellfish:{c:"shellfish or mollusks",m:"guazzetto is often made with shellfish"},
+ sulfites:{m:"cooked with wine"},celery:{m:"braise or stock base"},citrus:{c:"citrus in the dish"},soy:{m:"vegan cheese or chocolate can contain soy"},coconut:{m:"vegan cheese can contain coconut"}};
+const _alCache=new Map();
+function drinkText(x){
+  if(x.ing) return x.ing.map(i=>i[2]).join(", ")+" | "+(x.gar||"");
+  if(x.ref) return x.ref.ing.map(i=>i[2]).join(", ")+" | "+(x.ref.gar||"");
+  return (x.n||"")+" | "+(x.d||"");
+}
+function textAllergens(text){
+  const t=String(text).replace(/cream of coconut|coconut cream/gi,"coconut").replace(/ginger beer|root beer|ginger ale/gi,"ginger soda");
+  const out={c:{},m:{}};
+  for(const [k,[c,m]] of Object.entries(DRINK_AL)){ const mc=c&&t.match(c); if(mc){out.c[k]=mc[0];continue} const mm=m&&t.match(m); if(mm)out.m[k]=mm[0]; }
+  return out;
+}
+function allergensOf(x,isFood){
+  const key=(isFood?"F:":"D:")+(x.n||"")+"|"+(isFood?"":drinkText(x));
+  if(_alCache.has(key))return _alCache.get(key);
+  let out;
+  if(isFood){ const m=FOOD_AL[x.n]||{}; out={c:{},m:{}}; (m.c||[]).forEach(k=>out.c[k]=(FOOD_WHY[k]&&FOOD_WHY[k].c)||"in the dish"); (m.m||[]).forEach(k=>{if(!out.c[k])out.m[k]=(FOOD_WHY[k]&&FOOD_WHY[k].m)||"possible"}); }
+  else if(x.k==="beer"){ out={c:{wheat:"brewed with barley or wheat"},m:{}}; if(/allagash white/i.test(x.n))out.c.citrus="brewed with orange peel"; }
+  else if(x.k==="wine"){ out={c:{sulfites:"wine"},m:{}}; }
+  else out=textAllergens(drinkText(x));
+  _alCache.set(key,out); return out;
+}
+function regAllergy(r){
+  if(!r)return {status:"unknown",keys:[],sev:"",other:""};
+  if(r.allergyStatus) return {status:r.allergyStatus,keys:r.allergens||[],sev:r.allergySeverity||"Allergy",other:r.allergy||"",at:r.allergyCheckedAt||0};
+  if(r.allergy){ const t=r.allergy.toLowerCase(), keys=[];
+    [["dairy",/dairy|milk|lactose|cream|cheese/],["egg",/egg/],["treenut",/tree ?nut|\bnuts?\b|almond|hazelnut|pistachio|walnut|pecan|cashew/],["peanut",/peanut/],["wheat",/gluten|wheat|celiac|coeliac/],["fish",/\bfish|anchov/],["shellfish",/shellfish|shrimp|clam|scallop|lobster|crab|mollus/],["soy",/\bsoy/],["sesame",/sesame/],["sulfites",/sulfite|sulphite/],["citrus",/citrus|lime|lemon|orange|grapefruit/],["coconut",/coconut/],["celery",/celery/]]
+      .forEach(([k,re])=>{if(re.test(t))keys.push(k)});
+    return {status:"has",keys,sev:"Allergy",other:r.allergy,at:0}; }
+  return {status:"unknown",keys:[],sev:"",other:"",at:0};
+}
+function otherRes(other){return String(other||"").split(/[,;]/).map(x=>x.trim()).filter(x=>x.length>2&&!/^(nuts?|eggs?|dairy|milk|gluten|wheat|fish|shellfish|soy|sesame|peanuts?|celery|coconut|citrus|sulfites?)$/i.test(x)).map(x=>new RegExp(x.replace(/[.*+?^${}()|[\]\\]/g,"\\$&").replace(/e?s$/,""),"i"))}
+/* conflicts for an item against a guest allergy profile */
+function conflicts(x,ga,isFood){
+  const res={contains:[],may:[]}; if(!ga||!ga.keys)return res;
+  const a=allergensOf(x,isFood);
+  ga.keys.forEach(k=>{ if(a.c[k])res.contains.push([k,a.c[k]]); else if(a.m[k])res.may.push([k,a.m[k]]); });
+  const txt=isFood?(x.n+" "+(x.d||"")):drinkText(x);
+  otherRes(ga.other).forEach(re=>{const m=txt.match(re); if(m)res.contains.push(["other",m[0]])});
+  return res;
+}
+const unsafe=(c,ga)=>c.contains.length>0||(/severe/i.test((ga&&ga.sev)||"")&&c.may.length>0);
+const conflictText=c=>[...c.contains.map(([k,w])=>`contains ${k==="other"?w:alName(k).toLowerCase()}${k!=="other"&&w&&!/in the dish|possible/.test(w)?` (${w})`:""}`),...c.may.map(([k,w])=>`may contain ${alName(k).toLowerCase()}`)].join(", ");
+function allergyHit(x,r){ const c=conflicts(x,regAllergy(r),false); return conflictText(c); }
+function foodAllergy(f,r){ const c=conflicts(f,regAllergy(r),true); return conflictText(c); }
+function allergyBlock(r){
+  const ga=regAllergy(r); const severe=/severe/i.test(ga.sev||""); const others=otherRes(ga.other);
+  return item=>{ const a=textAllergens(item); return ga.keys.some(k=>a.c[k]||(severe&&a.m[k]))||others.some(re=>re.test(item)); };
+}
+const CROSS={
+ dairy:"Rinse shaker tins and jiggers after any cream or Irish cream drink.",
+ egg:"Use a fresh shaker. Egg white residue lingers in tins and strainers.",
+ treenut:"Wipe jiggers and bar spoons after Frangelico, amaretto or orgeat. No shared muddler.",
+ peanut:"Keep bar snacks away from the station and wash hands before building.",
+ wheat:"Fresh glass, no beer on the build. Fried food shares a fryer.",
+ fish:"No Worcestershire. Check Bloody Mary mix and house brines.",
+ shellfish:"No clamato or seafood garnishes. Tell the kitchen.",
+ soy:"Check syrups, mixes and vegan cheese labels.",
+ sesame:"Check bar snacks and any toasted garnish.",
+ sulfites:"Skip wine, vermouth, sparkling and maraschino or brandied cherries.",
+ citrus:"Cut no-citrus garnishes fresh. Avoid the shared fruit tray and orange-flavored liqueurs.",
+ coconut:"Check tiki and colada mixes for coconut.",
+ celery:"No celery salt rims, celery bitters or Bloody Mary celery."
+};
+function crossTips(ga){
+  const t=ga.keys.map(k=>CROSS[k]).filter(Boolean);
+  if(/severe/i.test(ga.sev||""))t.unshift("Severe: tell your manager and the kitchen, flag the ticket, wash hands and use clean tools for every drink.");
+  return t;
+}
+function alChips(keys,sel,cls=""){return keys.map(([k,l])=>`<button type="button" class="chip al ${cls} ${sel.includes(k)?"on":""}" data-al="${k}">${esc(l)}</button>`).join("")}
+function alBadges(x,isFood){
+  const a=allergensOf(x,isFood); const c=Object.keys(a.c), m=Object.keys(a.m);
+  if(!c.length&&!m.length)return `<span class="tag altag ok">No listed allergens</span>`;
+  return c.map(k=>`<span class="tag altag">${esc(alName(k))}</span>`).join("")+m.map(k=>`<span class="tag altag may">May: ${esc(alName(k))}</span>`).join("");
+}
+const AL_DISCLAIMER="Based on our specs and the published menu. Recipes, brands and suppliers change. Always confirm with the kitchen and check bottle labels before serving a guest with an allergy.";
+
+/* ---------- guest allergy intake (guest-facing) ---------- */
+function openAllergyIntake(opts){
+  const {name,preset,onDone}=opts||{}; let keys=[...(preset&&preset.keys||[])], sev=(preset&&preset.sev)||"Allergy";
+  const k=$("#kiosk"); k.classList.add("on"); document.body.style.overflow="hidden";
+  k.innerHTML=`<div class="kbox"><button class="kclose" data-k="close" aria-label="Close">×</button>
+    <div class="eyebrow" style="color:var(--amber);font-weight:500">${name?`Welcome, ${esc(name.split(" ")[0])}`:"Welcome to the bar"}</div>
+    <h2>Any food allergies or things we should keep out of your drinks?</h2>
+    <p class="desc" style="font-size:16px">Tap everything that applies. We'll steer every drink and dish around it.</p>
+    <div class="row" id="iAl" style="margin-top:14px">${alChips(ALLERGENS,keys,"big")}</div>
+    <div class="field" style="margin-top:14px"><label>Anything else?</label><input id="iOther" value="${esc(preset&&preset.other||"")}" placeholder="Mint, raw onion, artificial sweeteners"></div>
+    <div class="sect">How serious is it?</div>
+    <div class="seg" id="iSev">${SEVERITY.map(s=>`<button type="button" class="${s===sev?"on":""}" data-s="${esc(s)}">${esc(s)}</button>`).join("")}</div>
+    <button class="btn primary" id="iDone" style="width:100%;justify-content:center;padding:14px;margin-top:18px;font-size:16px">Done</button>
+    <button class="btn" id="iNone" style="width:100%;justify-content:center;padding:14px;margin-top:10px;font-size:16px">I don't have any allergies</button>
+    <div class="note" style="text-align:center">Please hand the device back to your bartender.</div></div>`;
+  const close=()=>{k.classList.remove("on");document.body.style.overflow=""};
+  k.onclick=e=>{
+    if(e.target.closest("[data-k=close]"))return close();
+    const c=e.target.closest("#iAl .chip"); if(c){c.classList.toggle("on");return}
+    const s=e.target.closest("#iSev button"); if(s){sev=s.dataset.s;$$("#iSev button").forEach(b=>b.classList.toggle("on",b===s));return}
+    if(e.target.id==="iDone"){ keys=$$("#iAl .chip.on").map(b=>b.dataset.al); const other=$("#iOther").value.trim(); close();
+      onDone&&onDone({status:keys.length||other?"has":"none",keys,sev,other}); }
+    if(e.target.id==="iNone"){ close(); onDone&&onDone({status:"none",keys:[],sev:"",other:""}); }
+  };
+}
+
+/* ---------- Allergy Check tab ---------- */
+let AC={status:"unknown",keys:[],sev:"Allergy",other:"",name:""}, acView="drinks";
+function acGA(){return {status:AC.keys.length||AC.other?"has":"none",keys:AC.keys,sev:AC.sev,other:AC.other}}
+function drawAllergyCheck(){
+  if(!$("#acChips"))return;
+  $("#acChips").innerHTML=alChips(ALLERGENS,AC.keys);
+  $("#acSev").innerHTML=SEVERITY.map(s=>`<button type="button" class="${s===AC.sev?"on":""}" data-s="${esc(s)}">${esc(s)}</button>`).join("");
+  $("#acView").innerHTML=[["drinks","Drinks"],["food","Food"]].map(([k,l])=>`<button class="${k===acView?"on":""}" data-v="${k}">${l}</button>`).join("");
+  const ga=acGA(), box=$("#acRes"), tips=$("#acTips");
+  if(!ga.keys.length&&!ga.other){ box.innerHTML=`<div class="empty">Ask every new guest before the first pour. Tap their allergies above, or hand them the device.</div>`; tips.innerHTML=""; $("#acSummary").innerHTML=""; return }
+  $("#acSummary").innerHTML=`<div class="alert"><b>⚠ ${esc(AC.name?AC.name+": ":"")}${esc([...ga.keys.map(alName),ga.other].filter(Boolean).join(", "))}</b><span>${esc(ga.sev)}</span></div>`;
+  const isFood=acView==="food";
+  const items=isFood?FOOD.map(f=>({x:f,label:f.n,sub:f.cat})):pairPool().map(x=>({x,label:x.n,sub:x.src==="dz"?({cocktail:"DZ cocktail",wine:"Wine",beer:"Beer",zero:"Zero-proof",coffee:"Caffè"})[x.k]:"Classic"}));
+  const avoid=[],check=[],ok=[];
+  items.forEach(it=>{const c=conflicts(it.x,ga,isFood); if(c.contains.length)avoid.push({...it,c}); else if(c.may.length)check.push({...it,c}); else ok.push(it)});
+  const row=(it,cls)=>`<div class="alrow ${cls}"><div><b>${esc(it.label)}</b> <span class="note" style="margin:0">${esc(it.sub)}</span></div><div class="why">${esc(conflictText(it.c))}</div></div>`;
+  const groups={}; ok.forEach(it=>{(groups[it.sub]=groups[it.sub]||[]).push(it.label)});
+  box.innerHTML=`<div class="sect" style="color:var(--red)">Avoid · ${avoid.length}</div>${avoid.map(it=>row(it,"bad")).join("")||`<div class="note">Nothing on the list contains these.</div>`}
+    <div class="sect" style="color:var(--gold)">Check first · ${check.length}</div>${check.map(it=>row(it,"warn")).join("")||`<div class="note">Nothing flagged as may-contain.</div>`}
+    <div class="sect" style="color:var(--green)">No listed allergens · ${ok.length}</div>
+    ${Object.entries(groups).map(([g,ns])=>`<div class="note" style="margin:6px 0 2px;color:var(--text)"><b>${esc(g)}</b></div><div class="tags">${ns.map(n=>`<span class="tag">${esc(n)}</span>`).join("")}</div>`).join("")}`;
+  tips.innerHTML=crossTips(ga).length?`<div class="sect">At the bar</div><ul class="tips">${crossTips(ga).map(t=>`<li>${esc(t)}</li>`).join("")}</ul>`:"";
+  const notes=ga.keys.map(k=>AL_NOTES[k]).filter(Boolean); if(notes.length)tips.innerHTML+=`<div class="note">${notes.map(esc).join(" ")}</div>`;
+}
+function initAllergyCheck(){
+  $("#acChips").onclick=e=>{const c=e.target.closest(".chip");if(!c)return;const k=c.dataset.al;AC.keys=AC.keys.includes(k)?AC.keys.filter(x=>x!==k):[...AC.keys,k];drawAllergyCheck()};
+  $("#acSev").onclick=e=>{const b=e.target.closest("button");if(!b)return;AC.sev=b.dataset.s;drawAllergyCheck()};
+  $("#acView").onclick=e=>{const b=e.target.closest("button");if(!b)return;acView=b.dataset.v;drawAllergyCheck()};
+  $("#acOther").oninput=e=>{AC.other=e.target.value.trim();drawAllergyCheck()};
+  $("#acName").oninput=e=>{AC.name=e.target.value.trim();drawAllergyCheck()};
+  $("#acHand").onclick=()=>openAllergyIntake({name:AC.name,preset:acGA(),onDone:res=>{AC.keys=res.keys;AC.sev=res.sev||"Allergy";AC.other=res.other;$("#acOther").value=res.other;drawAllergyCheck();toast(res.status==="none"?"Guest has no allergies":"Allergies added")}});
+  $("#acClear").onclick=()=>{AC={status:"unknown",keys:[],sev:"Allergy",other:"",name:""};$("#acOther").value="";$("#acName").value="";drawAllergyCheck()};
+  $("#acSave").onclick=()=>{const ga=acGA();openRegEditor(null,{name:AC.name,allergyStatus:ga.keys.length||ga.other?"has":"none",allergens:ga.keys,allergySeverity:ga.sev,allergy:ga.other,allergyCheckedAt:Date.now()})};
+  $("#acPair").onclick=()=>{pAl=[...AC.keys];pAlOther=AC.other;pGuestId="";location.hash="pairing";drawPairing()};
+  drawAllergyCheck();
+}
+
 /* ---------- boot ---------- */
 $("#q").addEventListener("input",renderGrid);
-drawChips();renderGrid();initPour();buildGroups();renderRegs();initPairing();initMenu();initFeedback();initBackup();route();setStatus();
+drawChips();renderGrid();initPour();buildGroups();renderRegs();initPairing();initMenu();initFeedback();initAllergyCheck();initBackup();route();setStatus();
 $("#rq").addEventListener("input",renderRegs);$("#addReg").onclick=()=>openRegEditor();
 initDb();
 </script>

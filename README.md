@@ -2,6 +2,7 @@
 
 A bartender's field guide that runs in the browser and installs on iPhone and iPad like an app.
 
+- **Allergy check:** ask every guest first. 13 allergens (the 9 major ones plus sulfites, citrus, coconut, celery), guest self-entry, avoid and check-first lists for drinks and dishes, cross-contact steps for the bar
 - **Recipes:** 48 classics and modern classics with garnish prep, batch scaling and step check-off
 - **Regulars:** their usual and exactly how they take it, interests and talking points, consented photo, guest rating, tailored drink suggestions
 - **Food pairing:** drink for their food, or food for their drink, tuned to a regular's taste and allergies
